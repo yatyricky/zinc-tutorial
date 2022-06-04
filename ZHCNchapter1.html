@@ -1,0 +1,484 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+  <title>Zinc中文教程 - 第一章:万恶的冲锋</title>
+  <link rel="stylesheet" href="./ZHCNstyle/style.css" type="text/css" media="all">
+  <link rel="shortcut icon" href="./favicon.ico">
+  <link rel="bookmark" href="./favicon.ico">
+  <script type="text/javascript" src="./ZHCNstyle/funcs.js">
+  </script>
+</head>
+
+<body>
+  <script type="text/javascript">
+    writeNavigation(1);
+  </script>
+  <div id="navigation">
+    <font class="keyword"><a onmousedown="showTOC(1);">目录</a>|<a
+        href="./ZHCNchapter1.html">简体中文</a>|<a
+        href="./chapter1.html">繁體中文</a></font>
+  </div>
+  <div class="content1" onmousedown="hideTOC(1);">
+    <h1>第一章:万恶的冲锋</h1>
+    <h2>概要</h2>
+    <p>这个技能已经不需要我来赘述了,相信这是无数WEer很久之前就像做的技能(好吧,可能是有一些主观).</p>
+    <p>这一章在一开始将会帮助读者分析冲锋这个技能,并且尝试从Jass的习惯过度到Zinc,期间会穿插一些语法介绍,然后就是手把手地写代码.读者不需要对这章的内容理解得非常透彻,但是,要对Zinc形成一个基本印象,以方便以后的学习.
+    </p>
+    <p>废话不谈,上分析.</p>
+    <h2>冲锋的问题</h2>
+    说到冲锋,大家脑海里自然浮现出一个单位往前移动,当然不是用手点的,是代码让它移动的.
+
+    所以很简单:
+    <div class="textbox">弄个循环,每次循环让单位移动那么一点距离,然后限定循环次数.</div>
+    可惜不行,因为:
+    <div class="textbox">循环一瞬间就被执行完了,所以结果就是单位"瞬移"到了目的地.</div>
+    怎么办呢?
+    <div class="textbox">循环里面加等待吗?</div>
+    <div class="textbox">等待就要用到计时器
+      <div class="code">
+        <script type="text/javascript">
+          highlight("timer");
+        </script>
+      </div>
+      .
+    </div>
+    <p>不过计时器也不是通过循环来执行的.这个大家都知道了. </p>
+    <p>并且为了实现多人化,肯定不能所有单位都用同一个计时器,得各用各的,所以,在这里:
+    </p>
+    <div class="textbox">单位和计时器形成了一一对应的关系.</div>
+    于是大家都晓得要把一些数据绑定在计时器上面.
+    <p></p>
+    <p>单位要移动,大家都知道会指定一些数值,它们有:
+    </p>
+    <div class="textbox">
+      <ul>
+        <li>单位 - 你要移动的单位,所以当然有单位</li>
+        <li>移动距离 - 如果是指定点,那么需要知道这个单位要移动多远</li>
+        <li>移动目标 - 如果是指定目标,那么单位恐怕就是一直对着目标冲锋,冲到为止</li>
+      </ul>
+    </div>
+    这里以指定点冲锋为例.指定点冲锋的话,可以在技能施放生效的时候就计算出这个单位将移动多远,并且可以根据自己的需要指定这个单位多少秒之内移动到目的地.
+    <p></p>
+    <p>人类的肉眼看24帧以上的图片切换就基本认为是动画了,为了是整除,用25帧来计算,所以我们取(1 / 25 = 0.04)来作为计时器的执行周期. </p>
+    <p>假设这里的冲锋在1秒内完成,冲锋900距离,给定方向a. </p>
+    <p>那么我们得到如下量:
+    </p>
+    <div class="textbox">
+      <ul>
+        <li>计时器执行周期:0.04秒</li>
+        <li>计数器执行次数:1 / 0.04 = 25次</li>
+        <li>每次移动距离:900 / 25 = 36</li>
+        <li>每次移动方向:a(弧度制)</li>
+      </ul>
+    </div>
+    <p></p>
+    进一步计算:
+    <div class="textbox">
+      <ul>
+        <li>每次移动x轴距离:Cos(a) * 36</li>
+        <li>每次移动y轴距离:Sin(a) * 36</li>
+      </ul>
+    </div>
+    抽取在计时器执行时需要的量,计时器需要记录的仅仅是和其他的同类事件不同的数据,比如计时器周期永远是0.04,执行次数永远是25次,所以这些是不必记录的:
+    <div class="textbox"> 计时器执行的时候我们只干一件事情,就是移动单位,移动单位肯定需要单位,然后需要移动的偏移量,即x轴上移动多少,y轴上移动多少.最后需要一个量来记录我们移动了多远了,或者说移动了多少次了.
+      <ul>
+        <li>单位</li>
+        <li>每次移动x轴距离</li>
+        <li>每次移动y轴距离</li>
+        <li>当前移动次数</li>
+      </ul>
+    </div>
+    传统的做法:
+    <div class="textbox"> 当然是把数据一个个存入哈希表
+      <div class="code">
+        <script type="text/javascript">
+          highlight("hashtable");
+        </script>
+      </div>
+      以计时器为主键,然后在到期的计时器把数据一个个提取出来.
+      <div class="code">
+        <script type="text/javascript">
+          highlight("local ^timer ^tm ^= ^CreateTimer^()^<br/>^call ^SaveUnitHandle^(^ht^, ^GetHandleId^(^tm^), ^0^, ^u^)^<br/>^call ^SaveInteger^(^ht^, ^GetHandleId^(^tm^), ^1^, ^25^)^<br/>^call ^SaveReal^(^ht^, ^GetHandleId^(^tm^), ^2^, ^Cos^(^a^) ^* ^36^)^<br/>^call ^SaveReal^(^ht^, ^GetHandleId^(^tm^), ^3^, ^Sin^(^a^) ^* ^36^)^<br/><br/>^local ^timer ^tm ^= ^GetExpiredTimer^()^<br/>^local ^unit ^u ^= ^LoadUnitHandle^(^ht^, ^GetHandleId^(^tm^), ^0^)^<br/>^local ^integer ^count ^= ^LoadInteger^(^ht^, ^GetHandleId^(^tm^), ^1^)^<br/>^local ^real ^dx ^= ^LoadReal^(^ht^, ^GetHandleId^(^tm^), ^2^)^<br/>^local ^real ^dy ^= ^LoadReal^(^ht^, ^GetHandleId^(^tm^), ^3^)");
+        </script>
+      </div>
+    </div>
+    <p>但是,如果我们把这些指令模块化,就是说把这些数据集合成一个整体,而不是像现在这样一条条语句地赋值,然后再一条条地提取. </p>
+    <p>乍一看上去,我们是把这些数据在集中使用,实际上,它们都是相对独立的,因为在任何时候我们可以选择只提取它们之中的几个数据,看起来很灵活,可是,万一代码写多了忘了呢? </p>
+    <p>下面就开始介绍Zinc(一切Zinc里面的东西都是Vjass里面的,既然这是Zinc教程,我就不说是Vjass里面的了)里面的结构 </p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("struct");
+      </script>
+      - 声明一个结构的关键字
+    </div>
+    下面把上面涉及到的数据封装成一个结构:
+    <div class="code">
+      <script type="text/javascript">
+        highlight("struct&nbsp;^ChargeData&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^count^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dy^;<br/>}");
+      </script>
+    </div>
+    <p>这里增加了一个计时器,前面讲到单位和计时器是一一对应的关系,既然单位唯一,那么计时器也要唯一,每个结构每次执行的计数器也会不一样.</p>
+    <p>这样,我们就有了这个冲锋的结构,它包含有5个</p>
+    <div class="textbox">成员变量</div>
+    说白了就是结构的属性.
+    <h3>语法</h3>
+    结构关键字
+    <div class="code">
+      <font class="hl">struct</font>
+      <script type="text/javascript">
+        highlight("ChargeData&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^count^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dy^;<br/>}");
+      </script>
+    </div>
+    结构名称
+    <div class="code">
+      <script type="text/javascript">
+        highlight("struct");
+      </script>
+      <font class="hl">ChargeData</font>
+      <script type="text/javascript">
+        highlight("{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^count^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dy^;<br/>}");
+      </script>
+    </div>
+    结构范围
+    <div class="code">
+      <script type="text/javascript">
+        highlight("struct ^ChargeData");
+      </script>
+      <font class="hl">{</font>
+      <script type="text/javascript">
+        highlight("<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^count^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dy^;<br/>");
+      </script>
+      <font class="hl">}</font>
+    </div>
+    5个成员变量中的1个
+    <div class="code">
+      <script type="text/javascript">
+        highlight("struct ^ChargeData ^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm^;^<br/>");
+      </script>
+      &nbsp;&nbsp;&nbsp;&nbsp;<font class="hl">integer count;</font>
+      <script type="text/javascript">
+        highlight("<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dy^;<br/>}");
+      </script>
+    </div>
+    另外,在Zinc里,每一条语句或者是声明后面都要加分号,如果记不清的话就看这里是怎么加的,哪些地方加了,哪些地方没加.
+    <div class="code">
+      <script type="text/javascript">
+        highlight("struct^ ^ChargeData^ ^{");
+        document.write("<br/>");
+        highlight("^&nbsp;&nbsp;&nbsp;&nbsp;^unit^ ^u");
+        document.write("<font class=\"hl\">;</font>");
+        document.write("<br/>");
+        highlight("^&nbsp;&nbsp;&nbsp;&nbsp;^timer^ ^tm^");
+        document.write("<font class=\"hl\">;</font>");
+        document.write("<br/>");
+        highlight("^&nbsp;&nbsp;&nbsp;&nbsp;^integer^ ^count");
+        document.write("<font class=\"hl\">;</font>");
+        document.write("<br/>");
+        highlight("^&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^dx");
+        document.write("<font class=\"hl\">;</font>");
+        document.write("<br/>");
+        highlight("^&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^dy");
+        document.write("<font class=\"hl\">;</font>");
+        document.write("<br/>");
+        highlight("}");
+      </script>
+    </div>
+    <h2>冲锋的动作</h2>
+    前面分析完了一个冲锋应该有的属性,下面就讲解如何执行.
+    <h3>地图初始化&amp;任意单位发动技能效果</h3>
+    <p>通常,我们会在事件开端里面写"任意单位发动技能效果",然后条件是"施放技能等于什么什么",动作就是要干的事情.</p>
+    <p>如果把一个GUI的触发器转成Jass以后会看到类似下面的代码.</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^function^ ^Trig_charge_Conditions^ ^takes^ ^nothing^ ^returns^ ^boolean^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^ ^not^ ^(^ ^GetSpellAbilityId^(^)^ ^=^=^ ^'A000'^ ^)^ ^)^ ^then^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^false^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^endif^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^true^<br/>^endfunction^<br/><br/>^function^ ^Trig_charge_Actions^ ^takes^ ^nothing^ ^returns^ ^nothing^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^// 各种动作^<br/>^endfunction^<br/><br/>^//===========================================================================^<br/>^function^ ^InitTrig_charge^ ^takes^ ^nothing^ ^returns^ ^nothing^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^set^ ^gg_trg_charge^ ^=^ ^CreateTrigger^(^&nbsp;&nbsp;^)^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^call^ ^TriggerRegisterAnyUnitEventBJ^(^ ^gg_trg_charge^,^ ^EVENT_PLAYER_UNIT_SPELL_EFFECT^ ^)^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^call^ ^TriggerAddCondition^(^ ^gg_trg_charge^,^ ^Condition^(^ ^function^ ^Trig_charge_Conditions^ ^)^ ^)^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^call^ ^TriggerAddAction^(^ ^gg_trg_charge^,^ ^function^ ^Trig_charge_Actions^ ^)^<br/>^endfunction");
+      </script>
+    </div>
+    <p>这里的</p>
+    <div class="code">InitTrig_charge</div>
+    <p>是这段函数的入口函数,意思就是在地图初始化的时候会被自动执行.</p>
+    <p>然后依次</p>
+    <div class="textbox">为全局变量gg_trg_charge赋值(为新的触发器),<br>
+      为gg_trg_charge注册任意单位事件(
+      <script type="text/javascript">highlight("EVENT_PLAYER_UNIT_SPELL_EFFECT");</script>
+      <font class="num">EVENT_PLAYER_UNIT_SPELL_EFFECT</font>就是玩家单位发动技能效果),<br>
+      为gg_trg_charge添加条件,<br>
+      为gg_trg_charge添加动作.
+    </div>
+    <h3>语法和代码</h3>
+    <p>那么在结构(又称结构体)里面,也有一个函数可以自动运行,为我们注册事件啊什么的.这个函数名称是固定的,叫:
+    </p>
+    <div class="code">
+      <font class="hl">onInit</font>
+    </div>
+    <p>它不能带参数,也不必有返回值,像这样写:</p>
+    <div class="code">
+      <script
+        type="text/javascript">highlight("private^ ^static^ ^method^ ^onInit^(^)^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^// 结构初始化内容^<br/>^}^");</script>
+    </div>
+    <p>
+      <font class="keyword">method</font>
+      的意思是方法,实际上就是函数,只不过到了结构里面它就不叫函数了,叫方法,method.无关紧要,记住就行,在以后的内容里,我都会把"函数"和"方法"的叫法区分开来.
+    </p>
+    <p>
+      <font class="keyword">private</font>
+      的意思是私有,就是这个方法只能在这个结构内部被调用.想当然,我这个结构初始化干我自己的事情,与别人不相干,所以将其声明为private.
+    </p>
+    <p>
+      <font class="keyword">static</font>
+      的意思是静态,静态的方法必须被这个结构体类型调用,而非静态的方法只能被结构体的实例调用,看不懂没关系,记住<font class="uj">onInit</font>
+      方法是静态的就可以了,然后对于那些术语,先打个照面,以后自然就懂了.
+    </p>
+    <p>那么下面,把那段转化出来的Jass用结构体的语法写出来.</p>
+    <div class="code">
+      <script
+        type="text/javascript">highlight("private^ ^static^ ^method^ ^onInit^(^)^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^trigger^ ^trg^ ^=^ ^CreateTrigger^(^)^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterAnyUnitEventBJ^(^trg^,^ ^EVENT_PLAYER_UNIT_SPELL_EFFECT^)^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trg^,^ ^Condition^(^function^ ^ChargeData^.^launch^)^)^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^trg^ ^=^ ^null^;^<br/>^}^");</script>
+    </div>
+    <div class="textbox">一些与Zinc无关的东西:
+      <ul>
+        <li>不必使用全局触发器,这个大家应该已经知道了.</li>
+        <li>老狼曾经说过:大部分触发动作直接写在条件里面.</li>
+        <li>局部变量set null,尽管对于触发器类型的变量来说没意义,但是,权当一种习惯吧.</li>
+      </ul>
+    </div>
+    我们可以发现,相较于Jass,在Zinc里面我们无需写那些诸如
+    <font class="keyword">call, set, endfunction</font>
+    之类的关键字,省了很多无用功.只不过结尾记得加<font class="hl">;</font>就行了.
+    <p>
+      细心的读者又发现了,原来那个条件里面是一个完整的函数名,现在怎么变成了</p>
+    <div class="code">
+      <font class="hl">ChargeData.launch</font>
+    </div>
+    <p>因为这个条件也即将被写入结构,并且它是一个静态的方法,静态的方法是需要使用</p>
+    <div class="textbox">结构类型名称<font class="hl">.</font>静态方法名称</div>
+    <p>这样的格式来使用的.</p>
+    <p>下面把条件连带结构写出来</p>
+    <div class="code">
+      <script
+        type="text/javascript">highlight("struct^ ^ChargeData^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^unit^ ^u^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^timer^ ^tm^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^integer^ ^count^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^dx^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^dy^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^static^ ^method^ ^launch^(^)^ ^-^>^ ^boolean^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^GetSpellAbilityId^(^)^ ^=^=^ ^'A000'^)^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^.^create^(^GetTriggerUnit^(^)^,^ ^GetSpellTargetX^(^)^,^ ^GetSpellTargetY^(^)^)^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^false^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>^&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^static^ ^method^ ^onInit^(^)^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trigger^ ^trg^ ^=^ ^CreateTrigger^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterAnyUnitEventBJ^(^trg^,^ ^EVENT_PLAYER_UNIT_SPELL_EFFECT^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trg^,^ ^Condition^(^function^ ^ChargeData^.^launch^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trg^ ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>}");</script>
+    </div>
+    <p>从这里,我们可以看到在Zinc里面,函数和方法是如何声明返回值类型的,即:</p>
+    <div class="code">
+      <font class="hl">-&gt; 类型</font>
+    </div>
+    <p>那么,为什么<font class="uj">onInit</font>后面什么也没有呢?</p>
+    因为如果一个函数或者方法返回
+    <font class="type">nothing</font>
+    类型的话,可以直接省略.
+    <p>现在,在条件里面,我们写道:如果施放的技能id为我们要放的冲锋技能的id,那么执行:</p>
+    <div class="code">
+      <font class="hl">ChargeData.create</font>(...
+    </div>
+    <p>这个方法.</p>
+    <p>
+      <font class="uj">create</font>方法带有3个参数:单位,技能施放点x坐标,技能施放点y坐标.
+    </p>
+    <p>那么,这里提到了第二个固定的方法,说它们固定并不是说一定要有,而是说Zinc的语法里面提供了这样的一套模板方法,让我们来重写.</p>
+    <div class="textbox">
+      <font class="uj">create</font>方法可以是私有(<font class="keyword">private</font>)也可以是公有(<font class="keyword">public
+      </font>),这个不重要;<br>但它必须是<font class="keyword">static</font>,必须是静态的;<br>其返回类型必须是本结构的类型:<font class="type">
+        ChargeData</font>
+    </div>
+    <p>这里我们在讨论冲锋,所以<font class="uj">create</font>返回ChargeData</p>
+    <p>现在开始写<font class="uj">create</font>方法</p>
+    <div class="code">
+      <script
+        type="text/javascript">highlight("struct^ ^ChargeData^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^unit^ ^u^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^timer^ ^tm^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^integer^ ^count^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^dx^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^dy^;^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^static^ ^method^ ^create^(^unit^ ^u^,^ ^real^ ^tx^,^ ^real^ ^ty^)^ ^-^>^ ^ChargeData^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^ ^data^ ^=^ ^ChargeData^.^allocate^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^angle^ ^=^ ^Atan2^(^ty^ ^-^ ^GetUnitY^(^u^)^,^ ^tx^ ^-^ ^GetUnitX^(^u^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^u^ ^=^ ^u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^dx^ ^=^ ^Cos^(^angle^)^ ^*^ ^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^dy^ ^=^ ^Sin^(^angle^)^ ^*^ ^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^tm^ ^=^ ^CreateTimer^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^count^ ^=^ ^25^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^data^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}<br/><br/>^&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^static^ ^method^ ^launch^(^)^ ^-^>^ ^boolean^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^GetSpellAbilityId^(^)^ ^=^=^ ^'A000'^)^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^.^create^(^GetTriggerUnit^(^)^,^ ^GetSpellTargetX^(^)^,^ ^GetSpellTargetY^(^)^)^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^false^;^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>^&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^static^ ^method^ ^onInit^(^)^ ^{^<br/>^&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trigger^ ^trg^ ^=^ ^CreateTrigger^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterAnyUnitEventBJ^(^trg^,^ ^EVENT_PLAYER_UNIT_SPELL_EFFECT^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trg^,^ ^Condition^(^function^ ^ChargeData^.^launch^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trg^ ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>}");</script>
+    </div>
+    <p>分析</p>
+    <div class="textbox">第1行<br>
+      方法的声明,因为一切都是在本结构内执行,无需外部函数或者方法来调用冲锋的开启方法,所以为私有
+      <font class="keyword">private</font>
+      .<br>
+      由于是Zinc的默认方法,并且该方法是结构类型.<font class="uj">create</font>调用,所以是静态
+      <font class="keyword">static</font>
+      .
+    </div>
+    <div class="textbox">第2行<br>
+      <font class="hl">申请一个该类型的实例</font>,又称<font class="hl">实例化</font>这个结构.通过调用一个固定的方法
+      <div class="code">
+        <font class="type">结构类型</font>.<font class="hl">allocate()</font>;
+      </div>
+      获得一个新的该结构类型的<font class="hl">实例</font>,这个过程,就是<font class="hl">实例化</font>
+      ,然后我们将这个实例赋值给一个变量data.这里,大家可以看到,声明data这个局部变量的时候,不是传统的<font class="type">integer</font>或者是<font class="type">unit
+      </font>之类的,而是我们这个结构的名称<font class="type">ChargeData</font>
+      ,因此,一个结构可以看成是一种类型,而前面我们定义的那些单位,计时器,就是这种类型的属性,就像一个单位,它具有生命值,飞行高度等属性一样.
+    </div>
+    <div class="textbox">
+      第3行<br>
+      数学运算,获得技能施放的角度,无关紧要.
+    </div>
+    <div class="textbox">
+      第4行<br>
+      这里接触到了一个新的运算符:
+      <div class="code">data<font class="hl">.</font>u</div>
+      可以这样去读:
+      <div class="code">data<font class="hl">的</font>u</div>
+      <font class="keyword">data</font>是什么?<font class="keyword">data</font>是我们前面刚刚申请到的实例,它的类型是<font class="type">
+        ChargeData</font>,而<font class="keyword">data</font>的类型(ChargeData)已经在前面定义过了,它具有那列出的5种属性,所以我们这里干的事情就是为它的<font
+        class="hl">u</font>属性赋值,值为从<font class="keyword">create</font>方法传递过来的u,也就是下面的触发条件调用<font class="keyword">create
+      </font>方法时代入的<font class="cj">GetTriggerUnit</font>.<br>
+      <font class="hl">在结构里面,一切static的东西,用<br>结构名称.xxxx<br>来调用,一切没有标记static的东西,用<br>实例.xxxx<br>来调用.</font>
+      <br>在后面将会讲到什么情况<font class="keyword">static</font>,什么情况<font class="keyword">非static</font>.
+    </div>
+    <div class="textbox">
+      第5, 6, 7, 8行和第4行的作用是一致的,这里便不再赘述.
+    </div>
+    <p>好了,到目前为止,我们离开始执行计时器就差两步了.
+    </p>
+    <ul>
+      <li class="no">将这些数据绑定到计时器</li>
+      <li class="no">开启计时器</li>
+    </ul>
+    <p></p>
+    <p>
+      前面我们是分别将一个个的属性和计时器绑定起来,现在我们不必这么做了,因为我们已经有了一个新的实例(实例又可以理解为,冲锋可以有很多次冲锋,我们从这么多次里面随便拿出一次,作为一个例子,每个例子都是唯一的),为什么不直接把这个实例绑定在计时器上面呢.
+    </p>
+    <p>这里我要给大家介绍一个库(library) - <a href="http://ydwe.info/forum.php?mod=viewthread&amp;tid=3550"
+        target="_new">TimerUtils</a>,作者是Vexorian,这个库提供了4个函数.</p>
+    <div class="code">
+      <script
+        type="text/javascript">highlight("function^ ^NewTimer^ ^takes^ ^nothing^ ^returns^ ^timer^<br/>^function^ ^SetTimerData^ ^takes^ ^timer^ ^whichTimer^,^ ^integer^ ^data^ ^returns^ ^nothing^<br/>^function^ ^GetTimerData^ ^takes^ ^timer^ ^whichTimer^ ^returns^ ^integer^<br/>^function^ ^ReleaseTimer^ ^takes^ ^timer^ ^whichTimer^ ^returns^ ^nothing");</script>
+    </div>
+    <p>讲解:</p>
+    <div class="textbox">
+      <font class="uj">NewTimer</font>的作用是新建计时器,用于取代<font class="cj">CreateTimer</font>,<font class="uj">ReleaseTimer
+      </font>的作用是回收计时器,用于取代销毁计时器<font class="cj">DestroyTimer</font>,因为<font class="keyword">TimerUtils</font>
+      采用了回收计时器的机制,就是不像传统的创建-销毁方法,它通过回收掉不用的计时器,将其暂停,以后要再用的时候拿出来.<br>
+      <font class="uj">SetTimerData</font>将传递进来的整数绑定在指定的计时器上面,<font class="uj">GetTimerData</font>
+      则是获取绑定在目标计时器上面的整数.<br>那么,我这里说来说去都是绑定整数,获得整数,听起来与结构体无关,不过没关系,可以通过Zinc语法里面的强制转换,把一个<font class="hl">实例转化为整数</font>
+      ,也可以把一个<font class="hl">整数转化为某个类型的实例</font>.至于转化原理以及是否是真正意义上的转化,以后再说.
+    </div>
+    然后现在我们有了将实例绑定在计时器上并且从计时器上面获得这个实例的方法,再加上计时器动作,代码就可以写成:
+    <div class="code">
+      <script
+        type="text/javascript">highlight("struct^ ^ChargeData^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^unit^ u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^timer^ tm^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^integer^ count^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ dy^;^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ run^(^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^ data^ ^=^ ^ChargeData^(^GetTimerData^(^GetExpiredTimer^(^)^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetUnitX^(^data^.^u^,^ ^GetUnitX^(^data^.^u^)^ ^+^ ^data^.^dx^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetUnitY^(^data^.^u^,^ ^GetUnitY^(^data^.^u^)^ ^+^ ^data^.^dy^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^count^ ^-^=^ ^1^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^data^.^count^ ^<^ ^1^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^destroy^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ ^create^(^unit^ ^u^,^ ^real^ ^tx^,^ ^real^ ^ty^)^ ^-^>^ ^ChargeData^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^ ^data^ ^=^ ^ChargeData^.^allocate^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^angle^ ^=^ ^Atan2^(^ty^ ^-^ ^GetUnitY^(^u^)^,^ ^tx^ ^-^ ^GetUnitX^(^u^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^u^ ^=^ ^u^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^dx^ ^=^ ^Cos^(^angle^)^ ^*^ ^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^dy^ ^=^ ^Sin^(^angle^)^ ^*^ ^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^tm^ ^=^ ^NewTimer^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^count ^=^ ^25^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetTimerData^(^data^.^tm^,^ ^integer^(^data^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TimerStart^(^data^.^tm^,^ ^0.04^,^ ^true^,^ ^function^ ^ChargeData^.^run^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^data^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ ^launch^(^)^ ^-^>^ ^boolean^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^GetSpellAbilityId^(^)^ ^=^=^ ^'A000'^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^.^create^(^GetTriggerUnit^(^)^,^ ^GetSpellTargetX^(^)^,^ ^GetSpellTargetY^(^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^false^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ ^onInit^(^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trigger^ ^trg^ ^=^ ^CreateTrigger^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterAnyUnitEventBJ^(^trg^,^ ^EVENT_PLAYER_UNIT_SPELL_EFFECT^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trg^,^ ^Condition^(^function^ ^ChargeData^.^launch^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trg^ ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}");</script>
+    </div>
+    <p>一点语法:</p>
+    <p>这里用一个私有(private)关键字把所有的属性和方法都框起来了,因为我们这里冲锋只做冲锋,所以不需要外部环境来获得这里的数据或者方法.因此,将所有的成员变量和方法都声明为私有.
+    </p>
+    <p>这里只是介绍Zinc的语法里面可以这样写,可以少写很多private,看各人喜好了.我个人是不太倾向于这样写的.
+    </p>
+    <p>分析:</p>
+    <div class="textbox">可以看到,<font class="cj">CreateTimer</font>变成了<font class="uj">NewTimer</font>,然后通过<font
+        class="type">integer</font>
+      (data)这样的语法来把data转化成整数,与计时器data.tm绑定在一起.<br>然后在计时器动作里面,第二行声明了一个ChargeData类型的变量data,由于在不同的方法里面,所以此data非彼data,不要以为用一样的名字就能获得一样的东西了.这行代码可以分解为如下几个步骤:
+      <div class="code">
+        <script type="text/javascript">
+          highlight("timer^ ^tm ^=^ ^GetExpiredTimer^(^)^;^ ^// 获得到期的计时器^<br/>^integer^ ^value ^=^ ^GetTimerData^(^tm^)^;^ ^// 获得绑定在计时器上的数据^<br/>^ChargeData ^value ^=^ ^ChargeData^(^data^)^;^ ^// 将该整数转化为一个ChargeData类型的实例");
+        </script>
+      </div>
+      然后就可以通过<font class="keyword">data.xxx</font>来进行各种操作了,比如改变单位的x坐标,更新执行次数,等.<br>当执行次数降低到0的时候,也就是25次动作执行完毕,干什么呢?
+    </div>
+    <p>显然现在要干的事情是:传统做法是,销毁计时器,清空哈希表内的数据,结束.但是在这里,我们自己声明一个destroy方法,来执行销毁这个实例应该干的事情.
+    </p>
+    <p>大家可以看到,这个destroy方法是通过</p>
+    <div class="code">
+      <font class="hl">data.destroy();</font>
+    </div>这样的用法来调用的,因为我们不希望这个destroy方法是静态的,它只为一个个的实例使用,各销毁各的,我们肯定不希望剑圣的冲锋结束的时候也把山丘之王的冲锋给强行终止吧.
+    <p></p>
+    <p>
+      下面写一个destroy方法:
+    </p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("method^ destroy^(^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^ReleaseTimer^(^this^.^tm^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^tm ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^u ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^deallocate^(^)^;^<br/>^}");
+      </script>
+    </div>
+    <p>分析:</p>
+    <div class="textbox">
+      这个方法不是<font class="keyword">static</font>
+      ,没有参数,没有返回值.<br>那么,既然不带参数,我们如何知道它要销毁的是哪个实例呢?<br>其实对比实例使用成员变量的方式,就可以发现,前面也讲过了,<font class="keyword">data.dx</font>
+      所获得的仅仅是<font class="hl">当前这个</font>实例的dx,同样的道理,<font class="keyword">data.destroy()</font>所执行的仅仅是当前<font
+        class="hl">这个</font>实例的<font class="keyword">destroy()</font>方法,<font class="hl">这个</font>
+      的英文在初中(现在是小学了吧)就学过了,就是:
+      <div class="code">
+        <font class="hl">this</font>
+      </div>
+      所以,在所有的非静态方法里面,<font class="special">this</font>
+      所引用的就是当前调用这个方法的实例,这样就解决了参数传递的问题.<br>进一步思考,非静态方法的作用就是自动传递参数,这个参数就是当前调用这个方法的实例,所以实际上,为了便于理解,我们完全可以不使用非静态方法,只要在静态(static)方法的参数列表里面增加一个该结构类型就可以了.请看下面的destroy方法:
+      <div class="code">
+        <script type="text/javascript">
+          highlight("static^ ^method^ destroy^(^ChargeData^ ^data^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^ReleaseTimer^(^data^.^tm^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^data^.^tm ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^data^.^u ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^data^.^deallocate^(^)^;^<br/>^}");
+          document.write("<br/><br/>");
+          highlight("...<br/>&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^.^destroy^(^data^)^;^<br/>...");
+        </script>
+      </div>
+      所以,所谓静态与非静态,只是为了方便一些书写和理解而已,不要以为是什么很高端的东西,在WE里面,一切东西最终都是要被解释成Jass来执行的,记住这个大原则,很多在Vjass,Zinc里面被扭曲掉的东西就比较好理解了.<br>回到这个destroy方法,第二行里面,我们释放掉了这个计时器,就假装它被销毁了.然后就是各种set
+      null,最后,调用一个Zinc里面提供的方法,来释放掉现在使用的这个实例,还记得之前的<font class="uj">.allocate()</font>(申请)吗?这里所做的就是对应的操作,<font
+        class="uj">.deallocate()</font>(释放).
+    </div>
+    <p>讲到这里,我们的冲锋就差不多可以告一段落了.总结之前,还有最后两点:</p>
+    <ul>
+      <li class="no">如何使用别人的库</li>
+      <li class="no">这段代码如何使用</li>
+    </ul>
+    <p>
+      Zinc和Vjass的代码非常好移植,新建一个触发器,转化为文本,然后将库的内容复制粘贴到代码区,就可以了,通常我们给触发器命名为这个库的名字,比如如果使用TimerUtils的话,这个触发器的名称也叫做TimerUtils,只是为了方便识别.
+    </p>
+    <p>那么,Zinc代码如何使用呢,请看下面完成版的冲锋代码</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("//! zinc^<br/>^library^ ^Charge ^requires^ ^TimerUtils ^{^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^struct^ ^ChargeData^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^unit^ u^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^timer^ tm^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^integer^ count^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ dx^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ dy^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^method^ ^destroy^(^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ReleaseTimer^(^this^.^tm^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^tm ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^u ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^deallocate^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ run^(^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^ data^ ^=^ ^ChargeData^(^GetTimerData^(^GetExpiredTimer^(^)^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetUnitX^(^data^.^u^,^ ^GetUnitX^(^data^.^u^)^ ^+^ ^data^.^dx^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetUnitY^(^data^.^u^,^ ^GetUnitY^(^data^.^u^)^ ^+^ ^data^.^dy^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^count^ ^-^=^ ^1^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^data^.^count^ ^<^ ^1^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^destroy^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ ^create^(^unit^ ^u^,^ ^real^ ^tx^,^ ^real^ ^ty^)^ ^-^>^ ^ChargeData^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^ ^data^ ^=^ ^ChargeData^.^allocate^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^ ^angle^ ^=^ ^Atan2^(^ty^ ^-^ ^GetUnitY^(^u^)^,^ ^tx^ ^-^ ^GetUnitX^(^u^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^u^ ^=^ ^u^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^dx^ ^=^ ^Cos^(^angle^)^ ^*^ ^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^dy^ ^=^ ^Sin^(^angle^)^ ^*^ ^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^tm^ ^=^ ^NewTimer^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^count ^=^ ^25^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetTimerData^(^data^.^tm^,^ ^integer^(^data^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TimerStart^(^data^.^tm^,^ ^0.04^,^ ^true^,^ ^function^ ^ChargeData^.^run^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^data^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ ^launch^(^)^ ^-^>^ ^boolean^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if^ ^(^GetSpellAbilityId^(^)^ ^=^=^ ^'A000'^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^.^create^(^GetTriggerUnit^(^)^,^ ^GetSpellTargetX^(^)^,^ ^GetSpellTargetY^(^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^ ^false^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^ ^method^ ^onInit^(^)^ ^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trigger^ ^trg^ ^=^ ^CreateTrigger^(^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterAnyUnitEventBJ^(^trg^,^ ^EVENT_PLAYER_UNIT_SPELL_EFFECT^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trg^,^ ^Condition^(^function^ ^ChargeData^.^launch^)^)^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^trg^ ^=^ ^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>^}^<br/>^//! endzinc<br/>");
+      </script>
+    </div>
+    <p>分析:</p>
+    <div class="textbox">
+      只要在代码的开头和结尾加上<font class="ext">//! zinc</font>和<font class="ext">//! endzinczinc</font>
+      标签,系统就认为中间的所有代码是Zinc代码,并且按照Zinc的语法来检查,解释.<br>在Zinc里面,对于一段具有特定功能的代码,我们将其划分为一个库,比如TimerUtils库,它所干的事情就是回收计时器,为计时器绑定数据等,ChargeData库,它所干的事情就是提供一个结构体来完成冲锋的触发(尽管这个结构最后被我声明成了私有,因为它不需要被外面的库来执行).<br>ChargeData使用到了TimerUtils提供的函数,因此在声明库的时候:
+      <div class="code">
+        <script type="text/javascript">
+          highlight("library^ Charge ^requires^ TimerUtils ^{");
+        </script>
+      </div>
+      最后这段概念不需要很深刻地理解,知道得这么写就成了.
+    </div>
+    <h2>总结</h2>
+    <p>这一章所涵盖的内容:</p>
+    <h3>基础</h3>
+    <div class="textbox">
+      <ul>
+        <li>Zinc的语法模式,那些花括号,隐匿Jass里面的关键字</li>
+        <li>认识私有关键字</li>
+        <li>认识结构体</li>
+        <li>结构体的成员变量(属性)</li>
+        <li>结构体的方法(函数)</li>
+        <li>结构体的实例化(.allocate)</li>
+        <li>结构体的销毁(.deallocate)</li>
+        <li>使用TimerUtils将结构体绑定在计时器上</li>
+      </ul>
+    </div>
+    <h3>进阶</h3>
+    <div class="textbox">
+      <ul>
+        <li>结构体里面静态和静态方法的本质</li>
+        <li>Zinc里面强制转化类型并不是真正意义上的转化,以后详解</li>
+      </ul>
+    </div>
+    <h3>附件</h3>
+    <div class="textbox">
+      <ul>
+        <li><a href="./libraries/TimerUtils.txt">TimerUtils下载</a></li>
+        <li><a href="./files/zinc_chpt1.w3x">本章地图</a></li>
+      </ul>
+    </div>
+    <div class="textbox"><a href="./ZHCNindex.html">&lt;&lt;前言</a>&nbsp;|&nbsp;<a
+        href="./ZHCNchapter2.html">第二章:Zinc基础及冲锋扩展&gt;&gt;</a></div>
+    <script type="text/javascript">
+      writeFooter();
+    </script>
+    <div id="footer">
+      <p>[Warft]Nef.出品, leoiii12繁化</p>
+      <p>致谢:Vexorian, 月协论坛, 月协论坛水民, YDWE制作组(everguo, wataloo, Aeris, Warft_TigerCN, Fetrix_sai, actboy168),
+        Warft_TigerCN等</p>
+      <p>联系方式:<a href="http://www.ydwe.info/forum.php?mod=viewthread&amp;tid=6421" target="_new">月协论坛</a>|<a
+          href="mailto:yatyricky@gmail.com">电子邮件(yatyricky@gmail.com)</a></p>
+    </div>
+  </div>
+  <script src="./ZHCNstyle/saved_resource" charset="UTF-8"></script>
+</body>
+
+</html>

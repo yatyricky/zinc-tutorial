@@ -1,0 +1,443 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+  <title>Zinc中文教程 - 第三章:伤害事件</title>
+  <link rel="stylesheet" href="./ZHCNstyle/style.css" type="text/css" media="all">
+  <link rel="shortcut icon" href="./favicon.ico">
+  <link rel="bookmark" href="./favicon.ico">
+  <script type="text/javascript" src="./ZHCNstyle/funcs.js">
+  </script>
+</head>
+
+<body>
+  <script type="text/javascript">
+    writeNavigation(3);
+  </script>
+  <div id="navigation">
+    <font class="keyword"><a onmousedown="showTOC(3);">目录</a>|<a
+        href="./ZHCNchapter3.html">简体中文</a>|<a
+        href="./chapter3.html">繁體中文</a></font>
+  </div>
+  <div class="content1" onmousedown="hideTOC(3);">
+    <h1>第三章:伤害事件</h1>
+    <h2>概要</h2>
+    <p>
+      在前一章,我们重点了解了Zinc的基础语法,2个常用的库(GroupUtils和Table),以及结构体的本质.那么,冲锋就可以暂时告一段落了,那么,秉承本教程的风格,没有可以拿来学习的例子,这教程是写不下去的,那么,我们将开始面对一个老生常谈的问题:伤害事件.
+    </p>
+    <p>这一章里,主要引用<a href="http://www.getdota.com/indexmain/lang/cn/" target="_new">DotA 6.72f
+        中文版</a>里面地狱领主亚巴顿的"无光之盾"和"回光返照"这两个技能,带领读者学习:</p>
+    <div class="textbox">
+      <ul>
+        <li>伤害事件的基本使用方法</li>
+        <li>更多的结构体</li>
+        <li>函数接口</li>
+        <li>文本宏</li>
+      </ul>
+    </div>
+    <h2>"无光之盾"和"回光返照"</h2>
+    <p>为方便没玩过DotA的朋友们,这里先作技能介绍:</p>
+    <div class="textbox">
+      <p>
+        <font class="keyword">无光之盾</font>
+      </p>
+      <p>用黑暗能量创造一个盾牌来保护友方的单位,能在消失前吸收一定量的伤害.盾牌被摧毁后,会将之前吸收的伤害反馈给周围500范围内的敌方单位.</p>
+      <p>
+        <font class="keyword">回光返照</font>
+      </p>
+      <p>激活时,移除身上负面的魔法效果,其间受到的所有伤害会转变成治疗.如果当前的生命值低于400而技能不在冷却过程中,技能会自动激活.</p>
+    </div>
+    <p class="ref">(DotA v6.72f 中文版, 原作者icefrog, 汉化aegis, xyf890228, harreke)</p>
+    <p>我们这里只关注重点,附加效果请读者参考本章附件自行阅读,所以对于上面的两个技能,我们将分别只做前半部分.并且技能都只做1级.</p>
+    <h3>关于魔兽争霸的伤害处理</h3>
+    <p>
+      在WC3的伤注册了害事件的触发条件和动作里面,可以获得伤害来源,受伤单位(触发单位),以及伤害.然而,在整个事件里面,触发单位是没有掉血的,真正的掉血发生在伤害事件以后,意思就是,如果一个血量为100/200的单位受到了20点伤害,那么,如果我们使用
+      <font class="cj">GetWidgetLife</font>来获得触发单位的血量,在触发器里面,我们得到的是100,而不是80.正是因为这个特性,对于伤害事件,我们有了很大的发挥余地.</p>
+    <p>一般来讲,如果要做免伤类型(反过来就是伤害加深了)的效果,笔者所知的有三种方法:</p>
+    <div class="textbox">
+      <ul>
+        <li class="no">使用巨魔狂暴战士的狂暴技能;</li>
+        <li class="no">在单位受到伤害触发以后,给触发单位增加或减少生命值;</li>
+        <li class="no">所有的护甲类型免伤100%,然后自己重写所有的伤害处理.</li>
+      </ul>
+    </div>
+    <p>
+      其中,第一种方法限制太大,如果某单位处于暂停或者昏迷等状态,那么它自身将无法开启狂暴,因而失效.第三种方法需要捕获"1.00"的伤害,并且代码量比较大,通常用于很复杂的伤害系统,并且容易出BUG,所以对于大多数WEer来说,可行性并不高.
+    </p>
+    <p>那么,我们在这里就使用第二种途径.</p>
+    <h3>无光之盾</h3>
+    <h4>简要分析</h4>
+    <p>该技能吸收伤害,为了通过使用第二种方法来达到这个效果,那么就是目标单位受到伤害以后为其恢复伤害,比如某带盾单位受到20点伤害,那么为它恢复20点生命值,吸收伤害便达成.</p>
+    <p>技能入口是单位对目标施放无光之盾,出口有两个,一个是盾牌被打爆,还有一个则是盾牌时间到.</p>
+    <p>如果目标单位身上已经有无光之盾,那么如果对该目标重复施放无光之盾,前一个将会被覆盖掉.</p>
+    <h4>整理</h4>
+    <div class="textbox">
+      <ul>
+        <li>无光之盾与目标单位是一一对应的关系.</li>
+        <li>无光之盾在12秒之后自动消失.</li>
+        <li>无光之盾在被打爆之后消失.</li>
+      </ul>
+    </div>
+    <p>并且,在目标被施放无光之盾以后,该目标应该被注册到一个伤害事件的触发器里面.</p>
+    <p>那么,如果把无光之盾结构化,它具有如下属性:</p>
+    <div class="textbox">
+      <ul>
+        <li>目标单位</li>
+        <li>计时器</li>
+        <li>当前可吸收的伤害量</li>
+        <li>视觉效果</li>
+      </ul>
+    </div>
+    <p>然后,我们需要一些变量,这些变量共享于所有的实例,那么它们应该是静态的:</p>
+    <div class="textbox">
+      <ul>
+        <li>一个触发器,用于处理伤害事件</li>
+        <li>单位组,防止目标单位被重复注册</li>
+        <li>一个表,用于将无光之盾和目标单位联系起来</li>
+      </ul>
+    </div>
+    <h4>代码</h4>
+    <p>需要用到的常量</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^//&nbsp;根据实际情况作修改^<br/>^private&nbsp;^constant&nbsp;^integer&nbsp;^SPELL_ID&nbsp;^=&nbsp;^'A000'^;^<br/>^private&nbsp;^constant&nbsp;^real&nbsp;^DURATION&nbsp;^=&nbsp;^12.0^;^<br/>^private&nbsp;^constant&nbsp;^real&nbsp;^DEFAULT_HP&nbsp;^=&nbsp;^100.0^;^<br/>^private&nbsp;^constant&nbsp;^string&nbsp;^VISUAL_EFFECT&nbsp;^=&nbsp;^\"Abilities\\\\Spells\\\\Undead\\\\FrostArmor\\\\FrostArmorTarget.mdl\"^;");
+      </script>
+    </div>
+    <p>库的初始化:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^AnyUnitSpellEffect^(^function^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^GetSpellAbilityId^()&nbsp;^==&nbsp;^SPELL_ID^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^AphoticShield^.^start^(^GetSpellTargetUnit^());^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^});^<br/>^}");
+      </script>
+    </div>
+    <p>语法:</p>
+    <div class="textbox">
+      <p>撇开中间的一段代码不谈,<font class="uj">onInit</font>函数里面实际上只执行了一个函数:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^AnyUnitSpellEffect^(...);^<br/>^}");
+        </script>
+      </div>
+      <p>AnyUnitSpellEffect是笔者自己写的注册任意单位发动技能效果的函数,因为每次写那么多字实在是麻烦,并且我们只需要一个条件函数作为动作就行了.下面是这个函数:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^public&nbsp;^function&nbsp;^AnyUnitSpellEffect^(^code&nbsp;^condfunc^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^trigger&nbsp;^trig&nbsp;^=&nbsp;^CreateTrigger^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^index&nbsp;^=&nbsp;^0^;&nbsp;^//&nbsp;玩家索引^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^while&nbsp;^(^index&nbsp;^<&nbsp;^bj_MAX_PLAYER_SLOTS^)&nbsp;^{&nbsp;^//&nbsp;为所有玩家注册^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterPlayerUnitEvent^(^trig^,&nbsp;^Player^(^index^),&nbsp;^EVENT_PLAYER_UNIT_SPELL_EFFECT^,&nbsp;^null^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^index&nbsp;^+=&nbsp;^1^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trig^,&nbsp;^Condition^(^condfunc^));&nbsp;^//&nbsp;然后添加条件^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^trig&nbsp;^=&nbsp;^null^;^<br/>^}");
+        </script>
+      </div>
+      <p>上述函数实际上只是<font class="bj">TriggerRegisterAnyUnitEventBJ</font>的一种符合笔者个人风格的写法而已,它省略了添加触发器动作,因为前面提到过:</p>
+      <div class="textbox">绝大多数触发器的动作可以全部写在条件里面.
+      </div>
+      <p class="ref">老狼</p>
+      <p>如果对上述函数仍然有疑问,读者可以在Jass编辑界面(TESH)里面,按住Ctrl键,然后移到某个函数上面,便可以看到这个函数是如何写的了.</p>
+      <p>回到<font class="uj">onInit</font>函数,里面的AnyUnitSpellEffect函数的参数应该是一个<font class="type">code</font>类型的变量,<font
+          class="type">code</font>类型一般写为:</p>
+      <div class="code">
+        <font class="keyword">function</font> 函数名
+      </div>
+      <p>那么,这里为什么写成了:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^function^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^GetSpellAbilityId^()&nbsp;^==&nbsp;^SPELL_ID^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^AphoticShield^.^start^(^GetSpellTargetUnit^());^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}");
+        </script>
+      </div>
+      <p>这样的形式呢?</p>
+      <p>这种没有函数名,直接写在参数项里面的函数,叫做<font class="keyword">匿名函数</font>
+        ,这种语法形式只是为了方便地写一些函数体很短的回调函数而设计的.比如这里,我们的条件里面只需判断施放技能是否为SPELL_ID,然后调用AphoticShield.start(目标单位)就可以了,如果为了这个还单独去写一个函数,未免麻烦,因此,Vexorian为我们提供了这种简便写法.
+      </p>
+      <p>匿名函数写法唯一需要注意的一点就是括号的匹配,其实这也不能算是问题,只要读者细心就可以了.</p>
+    </div>
+    <p>无光之盾结构:</p>
+    <div class="textbox">
+      <p>成员变量</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^private&nbsp;^static&nbsp;^HandleTable&nbsp;^ht^;^<br/>^private&nbsp;^static&nbsp;^trigger&nbsp;^damageTrig^;^<br/>^private&nbsp;^static&nbsp;^group&nbsp;^registered^;^<br/>^private&nbsp;^timer&nbsp;^tm^;^<br/>^private&nbsp;^unit&nbsp;^u^;^<br/>^private&nbsp;^real&nbsp;^shieldHP^;^<br/>^private&nbsp;^effect&nbsp;^eff^;");
+        </script>
+      </div>
+    </div>
+    <div class="textbox">
+      <p>初始化</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^private&nbsp;^static&nbsp;^method&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht&nbsp;^=&nbsp;^HandleTable^.^create^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^registered&nbsp;^=&nbsp;^CreateGroup^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^damageTrig&nbsp;^=&nbsp;^CreateTrigger^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^thistype^.^damageTrig^,&nbsp;^Condition^(^function&nbsp;^thistype^.^damaged^));^<br/>^}");
+        </script>
+      </div>
+      <p>对于一个触发器,没有必要遵循先注册事件,在添加条件,动作的顺序,我们可以先为触发器添加条件(在这里条件里面写的内容就是动作了),然后再根据情况注册事件.</p>
+      <p>这里我们需要触发器条件的函数,先声明在这里,以后再完成:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^private&nbsp;^static&nbsp;^method&nbsp;^damaged^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;待编辑^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}");
+        </script>
+      </div>
+    </div>
+    <div class="textbox">
+      <p>结构入口方法</p>
+      <p>在对目标单位造成实际效果之前,要先检查目标单位身上是否已经有无光之盾的实例,然后再进行一系列的操作.</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^static&nbsp;^method&nbsp;^start^(^unit&nbsp;^target^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^thistype^.^ht^.^exists^(^target^))&nbsp;^{&nbsp;^//&nbsp;检查句柄表里面目标单位的键下面是否有数据^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this&nbsp;^=&nbsp;^thistype^.^ht^[^target^]^;&nbsp;^//&nbsp;如果有,那么让this等于里面的数据.^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^{&nbsp;^//&nbsp;否则^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this&nbsp;^=&nbsp;^thistype^.^allocate^();&nbsp;^//&nbsp;申请新的实例,并对它的成员变量依次赋值^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht^[^target^]&nbsp;^=&nbsp;^this^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^tm&nbsp;^=&nbsp;^NewTimer^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetTimerData^(^this^.^tm^,&nbsp;^this^);&nbsp;^//&nbsp;绑定该实例到计时器^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^u&nbsp;^=&nbsp;^target^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(!^IsUnitInGroup^(^target^,&nbsp;^thistype^.^registered^))&nbsp;^{&nbsp;^//&nbsp;注册伤害事件^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterUnitEvent^(^thistype^.^damageTrig^,&nbsp;^target^,&nbsp;^EVENT_UNIT_DAMAGED^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^GroupAddUnit^(^thistype^.^registered^,&nbsp;^target^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^eff&nbsp;^=&nbsp;^AddSpecialEffectTarget^(^VISUAL_EFFECT^,&nbsp;^target^,&nbsp;^\"chest\"^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^shieldHP&nbsp;^=&nbsp;^DEFAULT_HP^;&nbsp;^//&nbsp;无论是覆盖,还是新增,目标单位身上的无光之盾剩余HP总是会被重置为默认值^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^TimerStart^(^this^.^tm^,&nbsp;^DURATION^,&nbsp;^false^,&nbsp;^function&nbsp;^thistype^.^expired^);^<br/>^}");
+        </script>
+      </div>
+      <p>现在,如果对某单位施放无光之盾,便会为其注册伤害事件,前面声明的那个静态方法(函数)便可以响应该单位接收伤害的事件了.</p>
+      <p>在进行实际的动作之前,我们先做好善后工作,就是时间到了会自动删除.</p>
+    </div>
+    <div class="textbox">
+      <p>计时器到期以及销毁方法</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^private&nbsp;^method&nbsp;^destroy^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^ReleaseTimer^(^this^.^tm^);&nbsp;^//&nbsp;回收该实例的计时器^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^DestroyEffect^(^this^.^eff^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht^.^flush^(^this^.^u^);&nbsp;^//&nbsp;将句柄表里面该实例的目标单位的键下面的数据清除^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^tm&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^u&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^eff&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^deallocate^();&nbsp;^//&nbsp;记得回收该实例.^<br/>^}^<br/><br/>^private&nbsp;^static&nbsp;^method&nbsp;^expired^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this&nbsp;^=&nbsp;^GetTimerData^(^GetExpiredTimer^());^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^this^.^destroy^();&nbsp;^//&nbsp;计时器到期当然只做一件事情,那就是销毁.^<br/>^}");
+        </script>
+      </div>
+    </div>
+    <div class="textbox">
+      <p>最后,回到伤害处理的方法:damaged</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("^private&nbsp;^static&nbsp;^method&nbsp;^damaged^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^t&nbsp;^=&nbsp;^GetTriggerUnit^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^dmg^,&nbsp;^life^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;单位受到任何形式的伤害都会触发这个触发器,^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;因此,当且仅当句柄表里面该单位键下面有数据时,则进行操作^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^thistype^.^ht^.^exists^(^t^))&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;根据单位的当前生命值,护盾剩余点数,触发伤害来决定单位的最终血量.^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^dmg&nbsp;^=&nbsp;^GetEventDamage^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this&nbsp;^=&nbsp;^thistype^.^ht^[^t^];^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^life&nbsp;^=&nbsp;^GetWidgetLife^(^t^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^this^.^shieldHP&nbsp;^>&nbsp;^dmg^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^shieldHP&nbsp;^-=&nbsp;^dmg^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^dmg&nbsp;^-=&nbsp;^this^.^shieldHP^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^destroy^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^life&nbsp;^-=&nbsp;^dmg^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^life&nbsp;^>&nbsp;^0.4&nbsp;^&amp;&amp;&nbsp;^life&nbsp;^-&nbsp;^GetEventDamage^()&nbsp;^<&nbsp;^0.4^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetWidgetLife^(^t^,&nbsp;^GetUnitState^(^t^,&nbsp;^UNIT_STATE_MAX_LIFE^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^DelayedRecover^.^start^(^t^,&nbsp;^life^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^t&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}");
+        </script>
+      </div>
+      <p>看似很简单的逻辑,在这里为什么要写的这么纠结呢?</p>
+      <p>在本章的开头提到过了<font class="keyword">魔兽争霸的伤害处理</font>
+        ,在那里提到过,实际的伤害发生在触发器结束以后,意思就是说,如果单位当前血量是100/100,身上带有50点数的护盾,如果该单位受到30点伤害,如果不采用任何手段进行处理,仅仅是在触发器里面增加单位30点生命值,那么单位还是100/100,在触发器结束以后,魔兽争霸对单位造成伤害,那么结果就是70/100,显然,我们想要的结果应该是100/100,因为50点的护盾应该把这30点完全吸收掉.
+      </p>
+      <p>
+        因此,我们采用0秒的计时器,在0秒以后将单位的生命值恢复到我们需要的数值,这样做会将设置生命值延迟在实际制造伤害之后.这便是上述写法的基本思想,上面的写法也不是固定形式,只是在这种机制下的一种解决方案,具体细节请读者自行分析.
+      </p>
+    </div>
+    <p>以上内容便是实现一个简单的吸收伤害的护盾的技能.下面简单地给出回光返照的代码.</p>
+    <h3>回光返照</h3>
+    <h4>简要分析</h4>
+    <p>实际上回光返照和吸收伤害护盾的实现方法是大同小异的,伤害吸收是恢复伤害,回光返照,伤害变治疗,那么我们在这里恢复伤害的2倍就行了.</p>
+    <p>技能入口是开启该技能,出口只有1个,就是时间到.或许有人说出口还有1个,就是单位死亡,确实,不排除某些不造成伤害而直接致死的技能,在这里就不考虑那么多了,毕竟开了这个技能就基本是无敌的存在.</p>
+    <p>如果技能无CD,那么前一个回光返照应该被覆盖掉.</p>
+    <h4>整理</h4>
+    <div class="textbox">
+      <ul>
+        <li>回光返照与目标单位是一一对应的关系.</li>
+        <li>回光返照在5秒后自动消失.</li>
+      </ul>
+    </div>
+    <p>其它的内容基本和无光之盾是一样的.</p>
+    <h4>代码</h4>
+    <p>其它部分的代码基本和无光之盾是一样的,只有伤害处理部分稍微不同,并且要比无光之盾简单.</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^private&nbsp;^static&nbsp;^method&nbsp;^damaged^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^t&nbsp;^=&nbsp;^GetTriggerUnit^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^life^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;单位受到任何形式的伤害都会触发这个触发器,^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;因此,当且仅当句柄表里面该单位键下面有数据时,则进行操作^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^thistype^.^ht^.^exists^(^t^))&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;根据单位的当前生命值,护盾剩余点数,触发伤害来决定单位的最终血量.^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this&nbsp;^=&nbsp;^thistype^.^ht^[^t^];^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^life&nbsp;^=&nbsp;^GetWidgetLife^(^t^)&nbsp;^+&nbsp;^GetEventDamage^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^GetWidgetLife^(^t^)&nbsp;^<&nbsp;^GetEventDamage^())&nbsp;^{&nbsp;^//&nbsp;如果某次伤害致死,那么暂时将单位生命值设满,然后再恢复为正常值^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetWidgetLife^(^t^,&nbsp;^GetUnitState^(^t^,&nbsp;^UNIT_STATE_MAX_LIFE^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^DelayedRecover^.^start^(^t^,&nbsp;^life^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^t&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}");
+      </script>
+    </div>
+    <h3>小结</h3>
+    <p>看上去,这两个技能的思路很简单,如果读者有测试地图的话,可以发现一切都很正常,没什么好说的了.</p>
+    <p>
+      但是,如果按照常理来思考这2个技能,我们可能会认为,当这2个技能同时开启的时候,如果单位受到伤害,那么这个伤害应该被吸收掉,因此不会触发回血效果,事实上DotA里面也是这样做的.那么,这两个技能做到现在,如果读者有同时开启两个技能并且仔细观察的话,会发现伤害被吸收,同时也恢复了生命值,这是为什么呢?
+    </p>
+    <h2>函数接口</h2>
+    <p>原因很简单,两个技能为单位注册了两次伤害事件,并且它们都是相对独立的,所以自然会同时触发.</p>
+    <p>并且,为一个单位注册过多的伤害事件,地图写大了以后,很容易出现一些匪夷所思的BUG,这个观点无从求证,只是笔者的个人经验之谈.那么,既然不要把伤害事件写得到处都是,我们是不是可以通过某种方法来统一管理伤害事件呢?</p>
+    <p>答案是肯定的.这里我们先来看一段代码.与伤害事件无关.</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^function&nbsp;^Action^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^aid&nbsp;^=&nbsp;^GetSpellAbilityId^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^aid&nbsp;^==&nbsp;^'A000'^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^if&nbsp;^(^aid&nbsp;^==&nbsp;^'A001'^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^if&nbsp;^(^aid&nbsp;^==&nbsp;^'AUin'^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^if&nbsp;^(^aid&nbsp;^==&nbsp;^'A01C'^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}^<br/><br/>^function&nbsp;^Entrance^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^trigger&nbsp;^trig&nbsp;^=&nbsp;^CreateTrigger^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterAnyUnitEventBJ^(^trig^,&nbsp;^EVENT_PLAYER_UNIT_SPELL_EFFECT^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^trig^,&nbsp;^Condition^(^function&nbsp;^Action^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^trig&nbsp;^=&nbsp;^null^;^<br/>^}");
+      </script>
+    </div>
+    <p>传统的技能发动效果处理方法是每个技能都创建一个触发器,然后在条件里面判断施放的技能ID是否等于我们需要的ID,然后在进行一系列的动作.那么,魔兽争霸是这样实现的,假设我们有3个技能<font class="num">
+        'A000', 'A001', 'AUin'</font>,在传统的写法里面就创建了3个触发器,他们的条件分别匹配<font class="num">'A000', 'A001', 'AUin'</font>
+      ,但是,当任意技能发动的时候,这3个触发器都会被触发,只不过由于条件的关系,另外两个的真实动作没有被执行而已.想象一下,如果某张地图里面有50个英雄,每个英雄6个技能,还不计算小怪技能,任意单位每施放一次技能,就要触发300个触发器,尽管现代计算机的速度很快了,但是我们可以做得更好.
+    </p>
+    <p>那么如果用上面的代码,我们就是在一个触发动作里面,判断了所有的技能,那么,我们显然不会写300个if - else,具体的实现方法就不在这里讲了,给出上面这段代码以及陈述只是让读者形成这种概念而已.</p>
+    <h3>重新分析无光之盾和回光返照</h3>
+    <p>带着批量处理伤害的思想,我们重新来分析上面的两个技能,在这里,请读者暂时忘掉魔兽争霸的伤害处理.</p>
+    <p>
+      首先,要对各种影响伤害的可能进行分类,这个要根据读者的实际情况决定,比如在读者的地图里面需要做哪些类型的伤害处理.先看无光之盾,它是吸收伤害,因此,它应该是发生在实际造成伤害之前,再看回光返照,它是在单位受到伤害以后才让单位回血,因此,我们应该把无光之盾和回光返照看成是两个事件,一个是伤害之前,一个是伤害之后.它们都对伤害有影响,或者说它们影响到目标单位的最终血量.
+    </p>
+    <div class="textbox">
+      <p>于是,我们在这里模拟出两个额外的事件:</p>
+      <ul>
+        <li>吸收事件</li>
+        <li>受伤事件</li>
+      </ul>
+    </div>
+    <p>既然是统一管理伤害事件,那么我们不妨专门写一个伤害事件的库.</p>
+    <h3>统一伤害处理</h3>
+    <h4>简要分析</h4>
+    <div class="textbox">
+      <p>这个库应该具有如下功能:</p>
+      <ul>
+        <li>允许用户注册魔兽争霸的伤害事件,以便让单位在这个库的伤害处理的动作里面得以执行动作</li>
+        <li>允许用户注册吸收伤害事件</li>
+        <li>允许用户注册受到伤害以后事件</li>
+      </ul>
+    </div>
+    <div class="textbox">
+      <p>使用如下全局变量:</p>
+      <ul>
+        <li>一个句柄表,来保存已经注册过的单位(不再使用单位组)</li>
+        <li>一个触发器,用来处理所有的魔兽争霸伤害事件</li>
+      </ul>
+    </div>
+    <h4>代码</h4>
+    <p>全局变量</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^private&nbsp;^HandleTable&nbsp;^registered^;^<br/>^private&nbsp;^trigger&nbsp;^dmgTrig^;");
+      </script>
+    </div>
+    <p>初始化</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^registered&nbsp;^=&nbsp;^HandleTable^.^create^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^dmgTrig&nbsp;^=&nbsp;^CreateTrigger^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^TriggerAddCondition^(^dmgTrig^,&nbsp;^Condition^(^function&nbsp;^DamageProcess^));^<br/>^}");
+      </script>
+    </div>
+    <p>注册伤害事件</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^public&nbsp;^function&nbsp;^RegisterUnitDamageEvent^(^unit&nbsp;^u^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(!^registered^.^exists^(^u^))&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^registered^[^u^]&nbsp;^=&nbsp;^1^;^&nbsp;^// 随便写入一个值以区分是否注册^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TriggerRegisterUnitEvent^(^dmgTrig^,&nbsp;^u^,&nbsp;^EVENT_UNIT_DAMAGED^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}");
+      </script>
+    </div>
+    <p>下面将是本章的重点,函数DamageProcess,用于处理所有伤害</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^private&nbsp;^function&nbsp;^DamageProcess^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^originalDamage&nbsp;^=&nbsp;^GetEventDamage^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^source&nbsp;^=&nbsp;^GetEventDamageSource^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^target&nbsp;^=&nbsp;^GetTriggerUnit^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^i&nbsp;^=&nbsp;^0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^actDmg&nbsp;^=&nbsp;^originalDamage^;&nbsp;^//&nbsp;实际伤害^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^life&nbsp;^=&nbsp;^GetWidgetLife^(^target^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;一系列的伤害处理^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^life&nbsp;^-=&nbsp;^actDmg^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^DelayedRecover^.^start^(^target^,&nbsp;^life^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^source&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^target&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}");
+      </script>
+    </div>
+    <p>那么,这个"一系列的伤害处理"要怎么写呢?</p>
+    <p>在实际操作中,要进行的伤害处理的类型基本不是固定的,因为地图可能会在以后扩展,或者是作修改.比如,笔者今天想处理无光之盾的伤害吸收,明天又想把这个技能换成一个别的,难道还回到这个库里面来修改代码吗?这样未免太麻烦.</p>
+    <p>一切的我们想执行的动作,无非就是一个函数,因此,我们可以考虑把这些函数放到一个数组里面,然后动态地将各种动作函数添加到这个数组里面,最后在伤害处理动作里面把这些函数全部执行掉.</p>
+    <p>Jass提供了如下两种调用函数的方式:</p>
+    <div class="textbox">
+      <ul>
+        <li>
+          <font class="keyword">call </font>函数名(在Zinc下,call关键字被省略)
+        </li>
+        <li>
+          <script
+            type="text/javascript">highlight("^native ^ExecuteFunc ^takes ^string ^funcName ^returns ^nothing^");</script>
+        </li>
+      </ul>
+    </div>
+    <p>很遗憾,前者无法被装到数组里面批量执行,必须手动地去写;而后者的参数是函数名称,可以动态地执行函数,但是无法携带参数.</p>
+    <p>不过,在Zinc里面,我们可以将函数虚拟成一种对象(结构),它具有参数列表,返回值类型属性,它可以被执行,为便于理解,请看下面的代码:</p>
+    <h4>语法</h4>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^//!&nbsp;zinc^<br/>^library&nbsp;^FunctionInterface&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^type&nbsp;^Operation&nbsp;^extends&nbsp;^function^(^integer^,&nbsp;^integer^)&nbsp;^->&nbsp;^integer^;^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Addition^(^integer&nbsp;^a^,&nbsp;^integer&nbsp;^b^)&nbsp;^->&nbsp;^integer&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;代码1^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^c&nbsp;^=&nbsp;^a&nbsp;^+&nbsp;^b^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^\"这里在做加法.\"^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^c^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Subtraction^(^integer&nbsp;^a^,&nbsp;^integer&nbsp;^b^)&nbsp;^->&nbsp;^integer&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;代码2^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^\"减法...\"^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^a&nbsp;^-&nbsp;^b^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Operation&nbsp;^func1&nbsp;^=&nbsp;^Addition^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Operation&nbsp;^func2&nbsp;^=&nbsp;^Subtraction^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^c&nbsp;^=&nbsp;^12^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^b&nbsp;^=&nbsp;^17^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^c^)&nbsp;^+&nbsp;^\"&nbsp;+&nbsp;\"&nbsp;^+&nbsp;^I2S^(^b^)&nbsp;^+&nbsp;^\"&nbsp;=&nbsp;\"&nbsp;^+&nbsp;^I2S^(^func1^.^evaluate^(^c^,&nbsp;^b^)));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^c^)&nbsp;^+&nbsp;^\"&nbsp;-&nbsp;\"&nbsp;^+&nbsp;^I2S^(^b^)&nbsp;^+&nbsp;^\"&nbsp;=&nbsp;\"&nbsp;^+&nbsp;^I2S^(^func2^.^evaluate^(^c^,&nbsp;^b^)));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}^<br/>^//!&nbsp;endzinc<br/>");
+      </script>
+    </div>
+    <p>在上面的代码里面,首先声明了一个叫<font class="keyword">Operation</font>
+      的函数接口,它带两个整数参数,返回一个整数类型.然后接着,代码声明了两个函数,它们都是按照Operation的格式写的,声明部分完全一样,但是函数体截然不同,不过这没关系,知道Addition是在做加法,Subtraction是在做减法就可以了.
+    </p>
+    <p>然后,在<font class="uj">onInit</font>函数里面,首先声明了两个变量func1,func2,有趣的是,它们的类型不是整数,实数之类,也不是结构体.而是上面声明的函数接口,就在这段代码之前提到过
+      <font class="hl">我们可以将函数虚拟成一种对象(结构)</font>,所以,上面的<font class="type">Operation</font>可以被看成是一个结构体,而<font
+        class="keyword">func1, func2</font>则是这个结构的两个实例,它们的值直接就是遵循<font class="type">Operation</font>格式的函数名.</p>
+    <p>然后,再通过和调用结构体方法一样的方式,使用<font class="hl">func1.evaluate(c, b)</font>来执行一次<font class="keyword">func1</font>
+      所指向的函数.我们可以把func1.<font class="uj">evaluate</font>(c, b)放在<font class="cj">I2S</font>函数里面,自然是因为它返回一个整数.</p>
+    <p>函数对象不仅可以使用.<font class="uj">evaluate</font>方法,还能使用.<font class="uj">execute</font>方法,它们的区别仅仅是.<font class="uj">
+        execute</font>无法携带返回值而.<font class="uj">evaluate</font>的函数体里面不能使用等待.能够学会灵活使用.<font class="uj">evaluate</font>
+      就基本可以应付所有的需要使用函数接口的情况了.</p>
+    <h4>代码</h4>
+    <p>回到伤害处理的库,由于我们要批量管理伤害吸收事件和受到伤害之后事件,因此这类函数需要代入处理的单位以及伤害量,然后返回伤害的变化量,因此代码可以这样写:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^public&nbsp;^type&nbsp;^ResponseAbsorbEvent&nbsp;^extends&nbsp;^function^(^unit^,&nbsp;^real^)&nbsp;^->&nbsp;^real^;^<br/>^private&nbsp;^ResponseAbsorbEvent&nbsp;^absorbCallList^[];^<br/>^private&nbsp;^integer&nbsp;^absorbCount&nbsp;^=&nbsp;^0^;^<br/>^public&nbsp;^function&nbsp;^RegisterAbsorbEvent^(^ResponseAbsorbEvent&nbsp;^responseAbsorb^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^absorbCallList^[^absorbCount^]&nbsp;^=&nbsp;^responseAbsorb^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^absorbCount&nbsp;^+=&nbsp;^1^;^<br/>^}^<br/><br/>^public&nbsp;^type&nbsp;^ResponseDamagedEvent&nbsp;^extends&nbsp;^function^(^unit^,&nbsp;^real^)&nbsp;^->&nbsp;^real^;^<br/>^private&nbsp;^ResponseDamagedEvent&nbsp;^damagedCallList^[];^<br/>^private&nbsp;^integer&nbsp;^damagedCount&nbsp;^=&nbsp;^0^;^<br/>^public&nbsp;^function&nbsp;^RegisterDamagedEvent^(^ResponseDamagedEvent&nbsp;^responseDamaged^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^damagedCallList^[^damagedCount^]&nbsp;^=&nbsp;^responseDamaged^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^damagedCount&nbsp;^+=&nbsp;^1^;^<br/>^}");
+      </script>
+    </div>
+    <p>相信这里已经没什么好说的了,定义函数接口,然后一个全局变量数组,类型为所定义的接口,再使用一个整数来记录已经注册过的函数实例,最后给用户提供一个函数来注册"自定义事件".</p>
+    <p>然后,回到之前搁置的"一系列的伤害处理".我们就可以通过循环,依次执行所有的函数了.</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^private&nbsp;^function&nbsp;^DamageProcess^()&nbsp;^-&gt;&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^originalDamage&nbsp;^=&nbsp;^GetEventDamage^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^source&nbsp;^=&nbsp;^GetEventDamageSource^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^unit&nbsp;^target&nbsp;^=&nbsp;^GetTriggerUnit^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^i&nbsp;^=&nbsp;^0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^actDmg&nbsp;^=&nbsp;^originalDamage^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^life&nbsp;^=&nbsp;^GetWidgetLife^(^target^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^while&nbsp;^(^i&nbsp;^&lt;&nbsp;^absorbCount^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^actDmg&nbsp;^-=&nbsp;^absorbCallList^[^i^].^evaluate^(^target^,&nbsp;^actDmg^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^i&nbsp;^+=&nbsp;^1^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^actDmg&nbsp;^&lt;&nbsp;^0^.^0^)&nbsp;^{^actDmg&nbsp;^=&nbsp;^0^.^0^;}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^i&nbsp;^=&nbsp;^0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^while&nbsp;^(^i&nbsp;^&lt;&nbsp;^damagedCount^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^actDmg&nbsp;^+=&nbsp;^damagedCallList^[^i^].^evaluate^(^target^,&nbsp;^actDmg^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^i&nbsp;^+=&nbsp;^1^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^life&nbsp;^&lt;&nbsp;^originalDamage^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetWidgetLife^(^target^,&nbsp;^GetUnitState^(^target^,&nbsp;^UNIT_STATE_MAX_LIFE^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^life&nbsp;^-=&nbsp;^actDmg^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^DelayedRecover^.^start^(^target^,&nbsp;^life^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^source&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^target&nbsp;^=&nbsp;^null^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}");
+      </script>
+    </div>
+    <p>客观地讲,这段代码实际上设计得不好,因为这里是约定了<font class="type">ResponseAbsorbEvent</font>类型的函数返回的都是吸收掉的伤害,<font class="type">
+        ResponseDamagedEvent</font>类型的函数返回的都是增加的伤害,因此这里的限制有点过大.不过没关系,读者能够通过这里理解函数接口的意义,本章的目的就达到了.</p>
+    <p>最后,再给出无光之盾代码修正掉的部分,并作简要解释.</p>
+    <p>到目前为止,我们仅仅是完成了这个伤害处理的库,要怎么使用呢?请看代码:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^//!&nbsp;zinc^<br/>^library&nbsp;^AphoticShieldFunctionInterface&nbsp;^requires&nbsp;^DamageEvent&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^constant&nbsp;^integer&nbsp;^BUFF_ID&nbsp;^=&nbsp;^'A004'^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^struct&nbsp;^AphoticShield&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^static&nbsp;^HandleTable&nbsp;^ht^;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;不再需要与伤害事件相关的成员变量了^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^timer&nbsp;^tm^;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^unit&nbsp;^u^;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^real&nbsp;^shieldHP^;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^effect&nbsp;^eff^;&nbsp;^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^method&nbsp;^destroy^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^UnitRemoveAbility^(^this^.^u^,&nbsp;^BUFF_ID^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^method&nbsp;^start^(^unit&nbsp;^target^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^else^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^UnitAddAbility^(^this^.^u^,&nbsp;^BUFF_ID^);&nbsp;^//&nbsp;使用另外一种指示单位开启技能的方法^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^RegisterUnitDamageEvent^(^this^.^u^);&nbsp;^//&nbsp;为目标单位注册WC3的伤害事件^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;符合ResponseAbsorbEvent格式的函数(静态方法)^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^method&nbsp;^action^(^unit&nbsp;^u^,&nbsp;^real&nbsp;^dmg^)&nbsp;^->&nbsp;^real&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^ret&nbsp;^=&nbsp;^0.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^GetUnitAbilityLevel^(^u^,&nbsp;^BUFF_ID^)&nbsp;^>&nbsp;^0^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this&nbsp;^=&nbsp;^thistype^.^ht^[^u^];^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^this^.^shieldHP&nbsp;^>&nbsp;^dmg^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;盾的点数大于伤害则返回伤害,意为降低dmg点伤害,即所有伤害被吸收^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^shieldHP&nbsp;^-=&nbsp;^dmg^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ret&nbsp;^=&nbsp;^dmg^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;否则返回护盾的剩余点数^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ret&nbsp;^=&nbsp;^this^.^shieldHP^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^explode^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^destroy^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;将需要降低的点数返回^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^ret^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^static&nbsp;^method&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht&nbsp;^=&nbsp;^HandleTable^.^create^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^RegisterAbsorbEvent^(^AphoticShield^.^action^);&nbsp;^//&nbsp;注册伤害吸收事件^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^AnyUnitSpe^...^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}^<br/>^//!&nbsp;endzinc<br/>");
+      </script>
+    </div>
+    <p>
+      所以,每次调用RegisterAbsorbEvent,便会在伤害吸收处理的全局变量数组里面增加一个函数,以后发生伤害事件的时候,这个函数便会被触发,所以,这里在动作函数里面,首先判断单位身上是否有相应的BUFF,然后再执行动作,因为任意单位在受到伤害以后,会把所有注册过的函数全部执行一次,实际上,这里就像写300个触发器一样,每个触发器会被触发,这里则是1个触发器里面的300个函数,基本思路还是一样,只不过是实现手法不同了.如果读者对RegisterAbsorbEvent(AphoticShield.action);这种写法感到困惑,那么请看下面的分解代码:
+    </p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^ResponseAbsorbEvent ^func1 ^= ^AphoticShield^.^action^;^<br/>^RegisterAbsorbEvent^(^func1^);");
+      </script>
+    </div>
+    <p>
+      首先声明一个ResponseAbsorbEvent类型的变量func1,它等于AphoticShield.action这个函数,上一章讲到过,所有的方法的本质都是函数,只不过非静态(non-static)的方法会自动带上一个参数(当前类型),因此破坏了函数的参数表,但是静态方法跟普通的函数没有任何区别.
+    </p>
+    <p>至于回光返照的代码,请读者参考本章附件.和无光之盾还是大同小异的.</p>
+    <h4>关于函数接口</h4>
+    <p>
+      所有的函数动作都是通过添加触发器动作,执行触发器来实现的,因此,函数接口的实际效率要低于直接调用函数,但是,如果通过这种方法来管理一些大量使用的触发器,实际效率又会提升,例如一个地图里面就只有10个技能,那就直接做10个触发器比较省事,不过,如果地图里面有300个技能,那么通过函数接口来统一管理所有的技能触发则会比较有效率,所以在本章的例子里面,使用函数接口以后,效率降低了.
+    </p>
+    <p>函数接口的最大好处,就是可以把一个函数当做参数来传递,并且在任意地方执行;然后就是可以自定义事件,比如可以写一个治疗函数,然后在这个函数里面可以执行各种函数对象,就实现了"任意单位接收治疗"事件.</p>
+    <h2>文本宏</h2>
+    <p>
+      观察上面的ResponseAbsorbEvent和ResponseDamagedEvent,会发现这两段代码真是惊人地相似,除了一个管理的是吸收(Absorb),另外一个管理的是伤害之后(Damaged).其实,如果读者回顾自己写过的代码,会发现有很多代码都是很相似的,比如以前的Return
+      Bug/Game Cache函数.又或者是某些全局变量的初始化.</p>
+    <p>对于这类相似度极高的代码,如果一行一行地全部用手写出来,未免太麻烦,这里给大家介绍文本宏,文本宏会在地图编译的最开始阶段处理.先看一段范例:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^//!&nbsp;zinc^<br/>^library&nbsp;^TextMacro&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//!&nbsp;textmacro&nbsp;WriteFuncs&nbsp;takes&nbsp;number^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display$number$^()&nbsp;{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^$number$^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//!&nbsp;endtextmacro^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//!&nbsp;runtextmacro&nbsp;WriteFuncs(\"1\")<br/>&nbsp;&nbsp;&nbsp;&nbsp;//!&nbsp;runtextmacro&nbsp;WriteFuncs(\"2\")<br/>&nbsp;&nbsp;&nbsp;&nbsp;//!&nbsp;runtextmacro&nbsp;WriteFuncs(\"3\")<br/>&nbsp;&nbsp;&nbsp;&nbsp;//!&nbsp;runtextmacro&nbsp;WriteFuncs(\"4\")<br/>&nbsp;&nbsp;&nbsp;&nbsp;//!&nbsp;runtextmacro&nbsp;WriteFuncs(\"5\")<br/>&nbsp;&nbsp;&nbsp;&nbsp;//!&nbsp;runtextmacro&nbsp;WriteFuncs(\"6\")<br/>&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Display1^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Display6^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Display3^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}^<br/>^//!&nbsp;endzinc<br/>");
+      </script>
+    </div>
+    <p>显示结果为:</p>
+    <div class="textbox">
+      <p>1</p>
+      <p>6</p>
+      <p>3</p>
+    </div>
+    <p>上面的代码,实际上会被编译成:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("^//!&nbsp;zinc^<br/>^library&nbsp;^TextMacro&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display1^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^1^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display2^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^2^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display3^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^3^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display4^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^4^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display5^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^5^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^Display6^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^6^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Display1^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Display6^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Display3^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}^<br/>^//!&nbsp;endzinc");
+      </script>
+    </div>
+    <p>相信这样以一来,就清楚多了,通过<font class="ext">//! textmacro [文本宏名] takes [标识符1], [标识符2], ...</font>来声明一个文本宏,然后以<font
+        class="ext">//! endtextmacro</font>来结束文本宏区域.每次调用<font class="ext">//! runtextmacro [文本宏名]</font>
+      ,便会将文本宏区域内的所有内容复制一遍,参数必须使用双引号.在文本宏区,使用<font class="keyword">$[标识符]$</font>来引用一个参数.实际上很像函数的声明与调用,只是写法略不同而已.</p>
+    <p>因此,我们可以把上面的函数接口的声明进行简化重写了.</p>
+    <h2>总结</h2>
+    <p>从这一章开始,笔者对于细节的描述量开始降低,这些东西希望读者可以自行理解.下面是本章整理.</p>
+    <h3>基础</h3>
+    <div class="textbox">
+      <ul>
+        <li>魔兽争霸的伤害事件</li>
+        <li>匿名函数</li>
+        <li>函数接口的声明以及简单使用</li>
+        <li>文本宏</li>
+      </ul>
+    </div>
+    <h3>附件</h3>
+    <div class="textbox">
+      <ul>
+        <li><a href="./files/zinc_chpt3.w3x">本章地图</a></li>
+      </ul>
+    </div>
+    <h2>
+      <font class="hl">不得不说的后话</font>
+    </h2>
+    <p>
+      写到这里,我慢慢地感觉到一丝不安,以前的一些Vjass,Zinc教程,都是只介绍语法,看起来晦涩难懂,但是如果读者是有编程基础的话,也确实只需要那些语法介绍就够了.由于我响应论坛一些朋友的要求,并且浏览了魔兽地图吧(WOW8),地精研究院(GA)和月协论坛(YDWE)的一些常见求助帖,以及整合入我自己的写地图经验,才开始写了这篇太过于实际的Zinc教程.因此让我所感到不安的正是-&gt;
+      <font class="hl">过多的个人写法会限制读者的思路</font>
+      .并且在当初设计这章的时候,函数接口的问题让我困扰了好久,一直想不出比较合适的例子,最后才是想到很多人经常提问怎么做伤害吸收的护盾,于是我便决定拿地狱领主的两个技能作为例子,但是实际上,用函数接口来解决这两个技能的冲突问题并不是那么理想与顺手,因为从软件工程的角度考虑,在伤害事件的处理里面,代码方式还是比较hard
+      code,不那么灵活,也可以说是本人技术不行.并且我自己接触函数接口这个语法以后,在很长的一段时间之内都不知道如何发挥其实际作用,直到阅读过Anitarf的SpellEvent以后,才知道可以用来统一处理类似函数.并且,我在最近的几个月才发觉函数接口的使用不是仅限于本章的用法.
+    </p>
+    <p>
+      所以,和结构体一样,函数接口也仅仅是一种语法形式而已,它们的作用都是为了做图,读者在写地图之前应该有个良好的规划,然后要分析哪些地方需要怎么写才会方便.而不是至始至终照着这篇教程提供的代码依葫芦画瓢,如果这篇教程限制了读者的思路的话,那我是罪过大了.
+    </p>
+    <p>不过,我个人觉得,如果读者是没有编程基础的,然后对做图的经验也不足,在读完这几章并且会按照这几章的技能写出一些自己的东西以后,思路难免会受到阻碍,因此,在最后一章里,我将重点使用结构体,将Vjass的精华展现给大家.</p>
+    <div class="textbox"><a
+        href="./ZHCNchapter2.html">&lt;&lt;第二章:Zinc基础及冲锋扩展</a>&nbsp;|&nbsp;<a
+        href="./ZHCNchapter4.html">第四章:结构体演练与数据结构&gt;&gt;</a></div>
+    <script type="text/javascript">
+      writeFooter();
+    </script>
+  </div>
+</body>
+
+</html>

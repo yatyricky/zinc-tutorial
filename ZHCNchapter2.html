@@ -1,0 +1,590 @@
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+  <title>Zinc中文教程 - 第二章:Zinc基础及冲锋扩展</title>
+  <link rel="stylesheet" href="./ZHCNstyle/style.css" type="text/css" media="all">
+  <link rel="shortcut icon" href="./favicon.ico">
+  <link rel="bookmark" href="./favicon.ico">
+  <script type="text/javascript" src="./ZHCNstyle/funcs.js">
+  </script>
+</head>
+
+<body>
+  <script type="text/javascript">
+    writeNavigation(2);
+  </script>
+  <div id="navigation">
+    <font class="keyword"><a onmousedown="showTOC(2);">目录</a>|<a href="./ZHCNchapter2.html">简体中文</a>|<a
+        href="./chapter2.html">繁體中文</a></font>
+  </div>
+  <div class="content1" onmousedown="hideTOC(2);">
+    <h1> 第二章:Zinc基础及冲锋扩展</h1>
+    <h2>概要</h2>
+    <p>在前面的一章里,我们用一个结构写了一个简单的冲锋,说是冲锋,其实那只是一个强迫施法者移动而已,没有视觉效果,没有伤害.</p>
+    <p>在这一章里,我们将:</p>
+    <div class="textbox">
+      <ul>
+        <li>认识Zinc的语法,因为对于很多没有接触过编程语言的读者来说,不进行语法介绍可能会比较不容易理解.</li>
+        <li>写一些常用函数,练习Zinc基础语法.</li>
+        <li>扩展冲锋</li>
+        <li>更多地认识一些常用库</li>
+        <li>了解结构体的本质</li>
+      </ul>
+    </div>
+    <h2>Zinc基础语法</h2>
+    <h3>隐匿关键字</h3>
+    <p>这点可以说是笔者选择Zinc的最重要的原因之一,相比Jass和Vjass,书写Zinc的时候可以因为少写很多字而节省时间,下面拿出一段Vjass代码和对等的Zinc代码做对比.</p>
+    <div class="textbox">
+      <p>Vjass:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("library^&nbsp;VjassCode&nbsp;^initializer^&nbsp;Init&nbsp;^requires^&nbsp;TimerUtils<br/>&nbsp;&nbsp;&nbsp;&nbsp;^globals^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private^&nbsp;^constant^&nbsp;^string^&nbsp;GAME_NAME&nbsp;^=^&nbsp;^\"测试\"^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^public^&nbsp;^integer^&nbsp;state^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endglobals^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^public^&nbsp;^struct&nbsp;^Vector^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^&nbsp;^Vector&nbsp;lastVector<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^&nbsp;x<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^&nbsp;y<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real^&nbsp;z<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^public^&nbsp;^static^&nbsp;^method^&nbsp;printLast&nbsp;^takes^&nbsp;^nothing^&nbsp;^returns^&nbsp;^nothing^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^local^&nbsp;^string^&nbsp;str&nbsp;^=^&nbsp;^\"最后创建的矢量:&nbsp;(\"^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;str&nbsp;^=^&nbsp;str&nbsp;^+^&nbsp;^R2S^(^Vector.lastVector.x^)^&nbsp;^+^&nbsp;^\",&nbsp;\"^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;str&nbsp;^=^&nbsp;str&nbsp;^+^&nbsp;^R2S^(^Vector.lastVector.y^)^&nbsp;^+^&nbsp;^\",&nbsp;\"^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;str&nbsp;^=^&nbsp;str&nbsp;^+^&nbsp;^R2S^(^Vector.lastVector.z^)^&nbsp;^+^&nbsp;^\")\"^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call^&nbsp;^BJDebugMsg^(^str^)^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^endmethod^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static^&nbsp;^method^&nbsp;^create^&nbsp;^takes^&nbsp;^real^&nbsp;x^,^&nbsp;^real^&nbsp;y^,^&nbsp;^real^&nbsp;z&nbsp;^returns^&nbsp;Vector<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^local^&nbsp;Vector&nbsp;v&nbsp;^=^&nbsp;Vector.^allocate^(^)^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;v.x&nbsp;^=^&nbsp;x<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;v.y&nbsp;^=^&nbsp;y<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;v.z&nbsp;^=^&nbsp;z<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set^&nbsp;Vector.lastVector&nbsp;^=^&nbsp;v<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^&nbsp;v<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^endmethod^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endstruct^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^public^&nbsp;^function^&nbsp;Test&nbsp;^takes^&nbsp;^nothing^&nbsp;^returns^&nbsp;^nothing^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call^&nbsp;Vector.^create^(^10^,^&nbsp;^50^,^&nbsp;^-^30^)^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call^&nbsp;Vector.printLast^(^)^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endfunction^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private^&nbsp;^function^&nbsp;Init&nbsp;^takes^&nbsp;^nothing^&nbsp;^returns^&nbsp;^nothing^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call^&nbsp;^BJDebugMsg^(^\"Hi&nbsp;there&nbsp;world\"^)^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endfunction^<br/>^endlibrary^");
+        </script>
+      </div>
+      <p>Zinc:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//!&nbsp;zinc^<br/>^library^&nbsp;ZincCode&nbsp;^requires^&nbsp;TimerUtils&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private^&nbsp;^constant^&nbsp;^string^&nbsp;GAME_NAME&nbsp;^=&nbsp;^\"测试\"^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^integer&nbsp;^state^;<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^struct&nbsp;^Vector&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^Vector&nbsp;^lastVector^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^x^,&nbsp;^y^,&nbsp;^z^;<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^static&nbsp;^method&nbsp;^printLast^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^string&nbsp;^str&nbsp;^=&nbsp;^\"最后创建的矢量:&nbsp;(\"^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^str&nbsp;^+=&nbsp;^R2S^(^Vector.lastVector.x^)&nbsp;+&nbsp;^\",&nbsp;\"^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^str&nbsp;^+=&nbsp;^R2S^(^Vector.lastVector.y^)&nbsp;+&nbsp;^\",&nbsp;\"^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^str&nbsp;^+=&nbsp;^R2S^(^Vector.lastVector.z^)&nbsp;+&nbsp;^\")\"^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^str^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^method&nbsp;^create^(^real&nbsp;^x^,&nbsp;^real&nbsp;^y^,&nbsp;^real&nbsp;^z^)&nbsp;->&nbsp;^Vector&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Vector&nbsp;^v&nbsp;^=&nbsp;^Vector.^allocate^();<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^v.x&nbsp;^=&nbsp;^x^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^v.y&nbsp;^=&nbsp;^y^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^v.z&nbsp;^=&nbsp;^z^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Vector.lastVector&nbsp;^=&nbsp;^v^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^v^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^function&nbsp;^Test^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Vector^.^create^(^10^,&nbsp;^50^,&nbsp;^-^30^)^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^Vector.printLast^();<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^function&nbsp;^onInit^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^\"Hi&nbsp;there&nbsp;world\"^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/>}<br/>^//!&nbsp;endzinc");
+        </script>
+      </div>
+    </div>
+    <p>不难发现,在Zinc的语法里面,我们可以少写很多诸如<font class="keyword">set</font>, <font class="keyword">call</font>这类的关键字,节省很多时间.</p>
+    <h3>库</h3>
+    <p>库(<font class="keyword">library</font>)是在Vjass里面就有了的概念,它的功能可以说是划分工作区域,也可以说是封装.说得简单一点,举个例子,大家都用过图形化界面的触发器(GUI-
+      <font class="keyword">T</font>rigger),比如有个英雄有风暴之锤和雷霆一击这2个技能,我们在写触发的时候肯定是建立2个触发器,而不会把这2个技能写在一个触发器里面.
+    </p>
+    <p>库也是这个概念,在一个库的作用域内,这个库完成一个或者是一系列特定的工作,作用域这个范围就是两个花括号之间的范围("<font class="keyword">{</font>"和"<font class="keyword">
+        }</font>").这一点在第一章的最后已经讲过了.</p>
+    <p>另外,在上面的例子中,我们可以发现两个库的最后一个函数名称有些不同,这是因为在Zinc里面,如果一个库里面有<font class="uj">onInit</font>函数的话,这个函数会被自动执行.</p>
+    <h3>全局变量自由声明</h3>
+    <p>在Zinc里面,我们不再需要在触发编辑器里面的设置变量窗口来编辑全局变量了,所有全局变量可以直接在一个库的除了结构体内,方法内,函数内的任意地方声明.</p>
+    <p>如:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("//!&nbsp;zinc^<br/>^library^&nbsp;ZincCode&nbsp;^requires^&nbsp;TimerUtils&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private^&nbsp;^constant^&nbsp;^string^&nbsp;GAME_NAME&nbsp;^=&nbsp;^\"测试\"^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^integer&nbsp;^state^;<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;...<br/>^}^<br/>^//!&nbsp;endzinc");
+      </script>
+    </div>
+    <p>这样,我们就可以直接使用<font class="keyword">GAME_NAME</font>和<font class="keyword">state</font>这两个变量了.</p>
+    <p>另外,<font class="keyword">constant</font>关键字的意思是该量为常量,不可重新对其进行赋值,仅仅可以读取该常量.</p>
+    <p>那么,<font class="keyword">public</font>和<font class="keyword">private</font>
+      是什么意思呢?字面上看,public是公众的,公共的,private是私人的,私立的.</p>
+    <h3>私有和公有</h3>
+    <p>
+      <font class="keyword">public</font>和<font class="keyword">private</font>实际上是描述了该元素的作用范围,又叫访问修饰符,它们可以用来描述<font
+        class="keyword">全局变量,结构体,方法,函数</font>等.
+    </p>
+    <div class="textbox">
+      <p>在Zinc里,如果一个全局变量,函数,结构体没有访问修饰符,则默认为private.</p>
+      <font class="hl">private(私有)的元素无法被外部的库所使用.</font>
+      <p>如果一个成员变量,方法没有访问修饰符,则默认为public.</p>
+    </div>
+    <p>这些规则看起来很纠结,不过在实际操作中也不是很重要,只是如果出现编译错误:</p>
+    <div class="textbox">
+      <p>Line [行号]: [结构体名称].[成员变量或方法] is private</p>
+      <p>Line [行号]: Undefined type [结构体名称]</p>
+      <p>Line [行号]: Undeclared variable [全局变量名称]</p>
+      <p>Line [行号]: Undeclared function [函数名称]</p>
+    </div>
+    <p>我们就应该知道(首先要确定没有拼写错误)是不是调用了私有的东西.</p>
+    <p>
+      虽然说public修饰的东西可以直接使用,但是有时候在使用一些Vjass的库的时候,还是会出现语法错误,找不到函数或者变量,这种情况下,一般让当前库requires目标库就可以了.如果还不行的话,就要查看目标函数是不是public的,这种情况下,要通过[目标库名称]_[函数名称],来使用.
+    </p>
+    <h3>逻辑运算</h3>
+    <p>Jass支持三种逻辑运算:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("and^ ^or^ ^not");
+      </script>
+    </div>
+    <p>与之对应的,在Zinc里面要这样写</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("&amp;&amp;^ ^||^ ^!");
+      </script>
+    </div>
+    <p>需要提出的是,由于Zinc语法的严格性,在<font class="keyword">if</font>等关键字后面的条件(逻辑表达式)必须用括号括起来,否则会出现:</p>
+    <div class="textbox">Line [行号]: Syntax Error (Unexpected: "[内容]"?</div>
+    <p>如果发现这种错误发生在逻辑表达式(条件)上面,就要查看是否忘记了加括号.</p>
+    <p>在Zinc里面,有一种特殊的if,叫<font class="keyword">static if</font>,注意这个static和结构体里面的static除了拼写相同以外没有其他关系.</p>
+    <p>有别于普通的if,static if后面只能带布尔常量及其表达式.看这些字没用,static if最有价值的用法就是:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("library ^TestA ^requires ^optional ^TestB");
+      </script>
+    </div>
+    <p>这里是让库TestA选择性地需求库TestB,那么在写代码的时候,就可以根据情况,根据库TestB是否存在而做适当修正.</p>
+    <p>JassHelper(YDWE)会根据当前存在的库自动生成一系列布尔常量,它们的格式为</p>
+    <div class="textbox">LIBRARY_[库名称]</div>
+    <p>比如根据上面那个库的声明,我们也许会写出这样的代码:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("function&nbsp;^...&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^if&nbsp;^(^LIBRARY_TestB^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^\"TestB存在\"^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;^else&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^\"TestB不存在\"^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>^}");
+      </script>
+    </div>
+    <h3>循环</h3>
+    <p>不得不承认,Jass的<font class="keyword">loop ... endloop</font>循环在某些情况下非常好用,不过很可惜,在Zinc里面,我们只能使用<font class="keyword">
+        while</font>, <font class="keyword">do ... while</font>, <font class="keyword">for</font>
+      来做循环.下面的介绍中间的例子是用3种循环结构打印数字0-9.</p>
+    <div class="textbox">
+      <p>while循环的语法</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("while&nbsp;^(^[条件]^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^[动作]^;<br/>}");
+        </script>
+      </div>
+      <p>过程:</p>
+      <ul>
+        <li class="no">条件检查,如果结果为真,则执行第2步,否则结束循环</li>
+        <li class="no">执行动作</li>
+        <li class="no">回到第1步</li>
+      </ul>
+      <p>示例:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("integer&nbsp;^i&nbsp;^=&nbsp;^0^;&nbsp;^//这里i控制着循环的开始和结束,一般将其称之为控制变量<br/>^while&nbsp;^(^i&nbsp;^<&nbsp;^10^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^i^));<br/>&nbsp;&nbsp;&nbsp;&nbsp;^i&nbsp;^+=&nbsp;^1^;<br/>}");
+        </script>
+      </div>
+    </div>
+    <div class="textbox">
+      <p>do ... while循环的语法</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("do&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^[动作]^;<br/>}&nbsp;^while&nbsp;^(^[条件]^)");
+          document.write("<font class=\"hl\">;</font>");
+        </script>
+      </div>
+      <p>过程:</p>
+      <ul>
+        <li class="no">执行动作</li>
+        <li class="no">条件检查,如果结果为真,则返回第2步,否则结束循环</li>
+      </ul>
+      <p>示例:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("integer&nbsp;^i&nbsp;^=&nbsp;^0^;<br/>^do&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^i^));<br/>&nbsp;&nbsp;&nbsp;&nbsp;^i&nbsp;^+=&nbsp;^1^;<br/>}&nbsp;^while&nbsp;^(^i&nbsp;^<&nbsp;^10^);");
+        </script>
+      </div>
+    </div>
+    <div class="textbox">
+      <p>for循环的语法</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("for&nbsp;^(^[表达式1]^;&nbsp;^[条件]^;&nbsp;^[表达式2]^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^[动作]^;<br/>}");
+        </script>
+      </div>
+      <p>过程:</p>
+      <ul>
+        <li class="no">执行表达式1,一般表达式1用来对控制变量赋初值</li>
+        <li class="no">条件检查,如果结果为真,则执行第3步,否则结束循环</li>
+        <li class="no">执行动作</li>
+        <li class="no">执行表达式2,一般表达式2用来改变控制变量</li>
+        <li class="no">返回第2步</li>
+      </ul>
+      <p>示例:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("integer&nbsp;^i^;<br/>^for&nbsp;^(^i&nbsp;^=&nbsp;^0^;&nbsp;^i&nbsp;^<&nbsp;^10^;&nbsp;^i&nbsp;^+=&nbsp;^1^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^BJDebugMsg^(^I2S^(^i^));<br/>}");
+        </script>
+      </div>
+    </div>
+    <p>如果只看上面的例子,可能会觉得while和do ... while没什么区别,但是如果仔细看操作流程的话,可以发现do ...
+      while无论如何都会先执行一次动作,这在一些特殊情况下会有用,尽管用while循环遇到这种情况可以直接在前面先写一条动作,不过这毕竟是一种选择.</p>
+    <p>for循环还有一种写法,笔者认为非常丑陋,实在不想拿出来,有兴趣的朋友可以参考<a href="http://www.wc3c.net/vexorian/zincmanual.html" target="_new">Zinc
+        Manual</a>.</p>
+    <p>肯定有人发现了上面的例子里面出现了<font class="keyword">i += 1;</font>这样的写法.</p>
+    <p>这也是Zinc里面出现的新语法,<font class="keyword">+=</font>这样的操作符总共有4个:<font class="keyword">+=, -=, *=, /=</font>
+      ,它们叫做符赋值运算符.</p>
+    <div class="textbox">
+      <div>
+        <font class="keyword">i += 1; 等价于 i = i + 1;</font>
+      </div>
+      <div>
+        <font class="keyword">i -= 2; 等价于 i = i - 2;</font>
+      </div>
+      <div>
+        <font class="keyword">i *= 3; 等价于 i = i * 3;</font>
+      </div>
+      <div>
+        <font class="keyword">i /= 4; 等价于 i = i / 4;</font>
+      </div>
+    </div>
+    <h3>调试模式</h3>
+    <p>Zinc里面还提供了一个关键字:<font class="keyword">debug</font>,在开启地图调试模式的情况下,该关键字将会被无视,在关闭地图调试模式的情况下,debug这一整行都将被无视(自动注释掉).
+    </p>
+    <img src="./imgs/chpt2_debug.gif">
+    <p>打开编辑器的配置选项,上图为YDWE的地图调试模式位置,选择地图调试模式或者debug mode,即开启.</p>
+    <p>比如在测试地图的时候会在屏幕上打印一些信息,而真正给玩家玩的时候这些信息肯定是不必要的,在这种情况下,大家就可以使用debug关键字来进行操作.例如:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("...<br/>^debug&nbsp;^BJDebugMsg^(^\"测试信息\"^);<br/>...");
+      </script>
+    </div>
+    <p>如果取消勾选地图调试模式,那么以上代码将不会被执行.</p>
+    <h3>小结</h3>
+    <p>以上就是Zinc里面的常用语法以及与Jass, Vjass的书写不同的地方.下面将开始更新第一章里面的冲锋.</p>
+    <h2>冲锋扩展</h2>
+    <p>说起冲锋,比较常见的就是对路径上的敌人造成一次伤害,然后冲锋的时候肯定会有各种视觉效果,然后就是得多人,我们这里不光要多人,甚至一个单位在前一次冲锋没结束又冲锋都不会出问题.</p>
+    <p>我们即将做的事情有:</p>
+    <div class="textbox">
+      <ul>
+        <li>添加视觉效果</li>
+        <li>遇到障碍物停止</li>
+        <li>对敌人造成伤害</li>
+        <li>实现重复使用不会抽筋</li>
+        <li>结构体的语法</li>
+      </ul>
+    </div>
+    <h3>添加视觉效果</h3>
+    <p>其实关于这一点,很多人已经会做了,为什么还要专门拿出来呢?在这里,笔者只是想提醒一些还没意识到把常用函数归类的朋友们,是时候总结一些自己常用的函数了.</p>
+    <p>实现视觉效果一般是用以下的方法:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("DestroyEffect^(^AddSpecialEffect^(^\"model path\"^, ^x^, ^y^));");
+      </script>
+    </div>
+    <p>但是,需要知道的是,有些特效如果在创建以后立即删除(即使用如上方法),该特效不会正常播放,所以我们通常会创建某个特效以后延迟一段时间以后将该特效删除.</p>
+    <p>实际上,我们不可能仅仅只做一次那样的工作,在一张地图里面,我们通常会多次"延迟删除特效",而创建一个特效的方式无外乎一下三种种:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("//&nbsp;在坐标(x,&nbsp;y)创建特效,使用模型modelName<br/>^native&nbsp;^AddSpecialEffect&nbsp;^takes&nbsp;^string&nbsp;^modelName^,&nbsp;^real&nbsp;^x^,&nbsp;^real&nbsp;^y&nbsp;^returns&nbsp;^effect^<br/>^//&nbsp;在物件targetWidget的attachPointName点创建特效,使用模型modelName<br/>^native&nbsp;^AddSpecialEffectTarget&nbsp;^takes&nbsp;^string&nbsp;^modelName^,&nbsp;^widget&nbsp;^targetWidget^,&nbsp;^string&nbsp;^attachPointName&nbsp;^returns&nbsp;^effect^<br/>^//&nbsp;在点where创建特效,使用模型modelName<br/>^native&nbsp;^AddSpecialEffectLoc&nbsp;^takes&nbsp;^string&nbsp;^modelName^,&nbsp;^location&nbsp;^where&nbsp;^returns&nbsp;^effect");
+      </script>
+    </div>
+    <p>其中第三种应该是很少使用的,毕竟使用坐标轴(第一种方法)会比较有效率一些.通过上面第一和第二个函数,我们会发现我们无外乎需要使用的就是<font class="keyword">模型路径</font>,<font
+        class="keyword">坐标或者物件和附加点</font>这两种参数,然后我们这里要附加延迟销毁的特效,所以会多一个时间的参数.既然是经常使用的函数,我们可以专门写一个延迟销毁特效的函数,以后直接使用即可.</p>
+    <p>以上思想相信有一部分读者已经懂得,那么,地图写多了以后,肯定不会只有一个"延迟销毁特效"这样的函数,我们会有很多类似的工具函数需要使用,那么,我们就可以用一个库,将这些工具函数集中起来.</p>
+    <p>下面我们将写一个FuncToolkit,意为函数工具箱.这第一个工具,便是"延迟销毁特效".首先进行分析,然后给出代码,最后对代码涉及到的语法进行讲解.</p>
+    <div class="textbox">
+      <p>既然是延迟做一些事情,那么需要使用计时器,以便将一些数据绑定在计时器上面,计时器到期以后将其销毁.所以要用到<font class="uj">TimerUtils</font>库,然后就不需要别的什么库了.</p>
+      <p>那么我们需要提供一些什么函数呢?其实就是前面列出的3个Common.j函数里面的前面两个(第三个使用点,并不是很实用),然后我们增加一个额外的参数,那便是时间.下面先写出库和函数的声明.</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//!&nbsp;zinc<br/>^library&nbsp;^FuncToolkit&nbsp;^requires&nbsp;^TimerUtils&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^// 因为这两个函数是提供给别的库(比如冲锋)使用的,所以声明为public<br/>&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^function&nbsp;^AddSpecialEffectTimed^(^string&nbsp;^modelName^,&nbsp;^real&nbsp;^x^,&nbsp;^real&nbsp;^y^,&nbsp;^real&nbsp;^duration^)&nbsp;{<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^public&nbsp;^function&nbsp;^AddSpecialEffectTargetTimed^(^string&nbsp;^modelName^,&nbsp;^widget&nbsp;^targetWidget^,&nbsp;^string&nbsp;^attachPointName^,&nbsp;^real&nbsp;^duration^)&nbsp;{<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/>}<br/>^//!&nbsp;endzinc<br/>");
+        </script>
+      </div>
+      <p>
+        那么,这两个函数都会以各自不同的方式创建特效,然后延迟一段时间以后销毁,所以我们可以写一些结构体,将特效与计时器对应起来,然后在到期的计时器的动作里面将特效销毁.由于这两个函数创建特效的方式不同,我们是不是要写2个结构体呢?
+      </p>
+      <p>
+        看起来不用,因为我们可以发现这两个函数有一个共同点,就是销毁的方式应该是相同的,那么,我们可以在这两个函数的函数体内创建特效,然后将这个特效和延迟时间以参数传递给一个结构体,让这个结构体来做销毁动作.所以,我们将这个结构体命名为
+        <font class="keyword">DestroyEffectTimed</font>,也是根据<font class="cj">DestroyEffect</font>来的.我们以如下的方式写.
+      </p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//&nbsp;结构体的延迟销毁在库内自动完成,因此将其声明为私有<br/>^private&nbsp;^struct&nbsp;^DestroyEffectTimed&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^effect&nbsp;^eff^;&nbsp;^//&nbsp;只对特效进行操作<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^static&nbsp;^method&nbsp;^run^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm&nbsp;^=&nbsp;^GetExpiredTimer^();<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this&nbsp;^=&nbsp;^GetTimerData^(^tm^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^DestroyEffect^(^this^.^eff^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ReleaseTimer^(^tm^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^eff&nbsp;^=&nbsp;^null^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^deallocate^();<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;这个方法要被结构体外部使用,因此不能为私有,不指定访问修饰符则默认为public<br/>&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^method&nbsp;^start^(^effect&nbsp;^eff^,&nbsp;^real&nbsp;^dur^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this&nbsp;^=&nbsp;^thistype^.^allocate^();<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^timer&nbsp;^tm&nbsp;^=&nbsp;^NewTimer^();<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^eff&nbsp;^=&nbsp;^eff^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetTimerData^(^tm^,&nbsp;^this^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^TimerStart^(^tm^,&nbsp;^dur^,&nbsp;^false^,&nbsp;^function&nbsp;^thistype^.^run^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}<br/>}<br/><br/>^public&nbsp;^function&nbsp;^AddSpecialEffectTimed^(^string&nbsp;^modelName^,&nbsp;^real&nbsp;^x^,&nbsp;^real&nbsp;^y^,&nbsp;^real&nbsp;^duration^)&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^effect&nbsp;^eff&nbsp;^=&nbsp;^AddSpecialEffect^(^modelName^,&nbsp;^x^,&nbsp;^y^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;^DestroyEffectTimed^.^start^(^eff^,&nbsp;^duration^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;^eff&nbsp;^=&nbsp;^null^;&nbsp;^//&nbsp;将这里的eff变量设置为空只是让\"指向我们创建特效\"的这个\"引用\"为空,<br/>&nbsp;&nbsp;&nbsp;&nbsp;//而在这之前,实际的特效已经被传递给start方法了.<br/>^}<br/><br/>^public&nbsp;^function&nbsp;^AddSpecialEffectTargetTimed^(^string&nbsp;^modelName^,&nbsp;^widget&nbsp;^targetWidget^,&nbsp;^string&nbsp;^attachPointName^,&nbsp;^real&nbsp;^duration^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^effect&nbsp;^eff&nbsp;^=&nbsp;^AddSpecialEffectTarget^(^modelName^,&nbsp;^targetWidget^,&nbsp;^attachPointName^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^DestroyEffectTimed^.^start^(^eff^,&nbsp;^duration^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^eff&nbsp;^=&nbsp;^null^;^<br/>^}");
+        </script>
+      </div>
+      <p>上面的两个函数很明显,以各自的方式创建一个特效,然后交给DestroyEffectTimed结构,以延迟销毁特效.</p>
+      <p>然后DestroyEffectTimed结构以start为入口方法,提供了延迟销毁特效的功能.</p>
+      <h3>语法:</h3>
+      <h4>关于<font class="uj">create</font>方法</h4>
+      <p>在第一章里,我们使用<font class="uj">create</font>方法作为实例化结构所在的方法,那么这里怎么换了一个start了呢?前面提到过,<font class="uj">create</font>
+        方法是Zinc提供的一个模板方法,这个方法必须返回一个该结构的实例,这样的好处是可以在结构外对这个实例进行一些操作,那么前面也同时提到,那仅仅是一个选择以及标准而已,我们完全可以不去使用(重写)<font
+          class="uj">create</font>方法,所以,这里换了一个方法名,笔者叫它start.</p>
+      <h4>
+        <font class="special">thistype</font>和<font class="special">this</font>关键字:
+      </h4>
+      <p>首先说<font class="special">thistype</font>,这个比较简单,它只能在结构体内部使用,在保存地图的时候,它会被自动替换成<font class="keyword">
+          当前所在结构体的结构体名称</font>,比如这里,我们写<font class="special">thistype</font>和<font class="keyword">DestroyEffectTimed
+        </font>是没有任何区别的.</p>
+      <p>前面的一章简要提到过<font class="special">this</font>关键字,它的作用是在一个<font class="keyword">非静态</font>方法里面,该关键字<font
+          class="hl">自动引动当前调用这个方法的实例</font>.而<font class="hl">在一个静态方法里面,不可以直接使用this</font>,但是可以把<font class="special">
+          this</font>作为一个普通的变量来使用,所以上面的:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("thistype ^this ^= ^thistype^.^allocate^();<br/>^this^.^eff ^= ^eff^;");
+        </script>
+      </div>
+      <p>可以写成:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("thistype ^data ^= ^thistype^.^allocate^();<br/>^data^.^eff ^= ^eff^;");
+        </script>
+      </div>
+      <p>或者:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("DestroyEffectTimed ^data ^= ^DestroyEffectTimed^.^allocate^();<br/>^data^.^eff ^= ^eff^;");
+        </script>
+      </div>
+      <h4>所谓的销毁方法:</h4>
+      <p>之前我们在写冲锋的时候,专门定义了一个destroy方法来进行善后工作,这实际上只是一种好习惯而已,也不是必须的,一个结构的实例化所使用的方法实际上是<font class="uj">allocate()</font>
+        ,而析构(销毁)方法实际上则是<font class="uj">deallocate()</font>.</p>
+      <p>所以在这里告诉大家这么多看似无用的东西,只是想让大家知道,我们通常看到的很多相似的代码也许只是一种传统,一种大家都去默认遵守的写法,当然,这样是好的,这样可以提高代码的可交流性,比如一个结构体的入口方法我们总是使用
+        <font class="uj">create</font>或者start这样的名称,而出口方法则总是叫destroy这样的名字.但是,再次声明,那也仅仅是一种习惯而已,只要知道大的原则,大家可以随意发挥.
+      </p>
+      <p>我并不是想表达一些矛盾的思想,只是希望大家能够在知道自己有多种选择的前提下,遵循一些大多数人常用的传统,如果你希望与别人交流你的代码的话.</p>
+    </div>
+    <p>
+      最后提一点,如果我们很严谨(有些朋友确实很严谨,甚至严谨到执着),比如我们希望我们的代码是经得起千锤百炼的,我们肯定不希望用户在使用我们的函数的时候,通过传递一些非法参数而出现一些稀奇古怪的情况,如果我们实在是无法处理这些异常,我们至少应该给出一些提示信息.比如当用户(好吧,基本上只有自己)传递一个负值作为时间参数到上面的函数,会发生什么,这点值得我们思考.
+    </p>
+    <p>那么,延迟销毁特效的函数就写好了,剩下的问题实际上就很简单了,只需在控制山丘之王移动的动作里面加一条销毁特效就可以了.</p>
+    <p>下面是代码:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("//!&nbsp;zinc<br/>^library&nbsp;^Charge&nbsp;^requires&nbsp;^TimerUtils^,&nbsp;^FuncToolkit&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^constant&nbsp;^string&nbsp;^EFF&nbsp;^=&nbsp;^\"Abilities\\\\Weapons\\\\AncientProtectorMissile\\\\AncientProtectorMissile.mdl\"^;<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^struct&nbsp;^ChargeData&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^private&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^method&nbsp;^run^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;设置单位坐标...<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^AddSpecialEffectTimed^(^EFF^,&nbsp;^GetUnitX^(^data^.^u^),&nbsp;^GetUnitY^(^data^.^u^),&nbsp;^0.04^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;控制执行次数等...<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^}<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;}<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/>&nbsp;&nbsp;&nbsp;&nbsp;<br/>}<br/>^//!&nbsp;endzinc<br/>");
+      </script>
+    </div>
+    <p>
+      在这里,我们为什么要专门声明一个常量来表示这个特效的模型的路径呢?这同样是一种好的编程习惯,试想我们在这段代码里面多次使用这个石头碎裂的特效,然后有朝一日我们想把所有的石头碎裂特效修改成溅血特效,那我们是不是还要把所有的这么一长串字符修改成新的字符串呢?显然这是一种很麻烦的行为.所以,将所有的常量与代码分开来放置,这也是一种习惯,是一种比较好的建议.
+    </p>
+    <h3>遇到障碍物停止</h3>
+    <p>其实如果对触发器有一定了解的朋友并不会认为这是个很难的问题,因为触发器里面本来就有地形判断,在这里之所以单独把这个问题列出来,只是为了向大家介绍一个别人写好的库而已:</p>
+    <div class="textbox">
+      <p>判断地形状态 - <a href="http://www.wc3c.net/showthread.php?t=103862"
+          target="_new">TerrainPathability</a>,作者为Rising_Dusk.</p>
+      <p>该库提供了如下函数:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("// 指定坐标的地形是否为深水<br/>^function ^IsTerrainDeepWater ^takes ^real ^x^, ^real ^y ^returns ^boolean^^<br/>^// 指定坐标的地形是否为浅水<br/>^function ^IsTerrainShallowWater ^takes ^real ^x^, ^real ^y ^returns ^boolean^<br/>^// 指定坐标的地形是否为陆地<br/>^function ^IsTerrainLand ^takes ^real ^x^, ^real ^y ^returns ^boolean^<br/>^// 指定坐标的地形是否为平台<br/>^function ^IsTerrainPlatform ^takes ^real ^x^, ^real ^y ^returns ^boolean^<br/>^// 指定坐标的地形是否可行走<br/>^function ^IsTerrainWalkable ^takes ^real ^x^, ^real ^y ^returns ^boolean");
+        </script>
+      </div>
+    </div>
+    <p>所以,在移动单位之前可以先行判断目标地形是否可行走,如果已经不能走了,那么直接将控制计时器动作是否执行销毁的那个成员变量count设置为满足销毁条件的值就可以了.</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("...<br/><br/>^static&nbsp;^method&nbsp;^run^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData&nbsp;^data&nbsp;^=&nbsp;^GetTimerData^(^GetExpiredTimer^());<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^targetx&nbsp;^=&nbsp;^GetUnitX^(^data^.^u^)&nbsp;^+&nbsp;^data^.^dx^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^targety&nbsp;^=&nbsp;^GetUnitY^(^data^.^u^)&nbsp;^+&nbsp;^data^.^dy^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^IsTerrainWalkable^(^targetx^,&nbsp;^targety^))&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetUnitX^(^data^.^u^,&nbsp;^targetx^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^SetUnitY^(^data^.^u^,&nbsp;^targety^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;}&nbsp;^else&nbsp;^{<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^data^.^count&nbsp;^=&nbsp;^-^1^;<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>^}<br/><br/>^...");
+      </script>
+    </div>
+    <h3>对敌人造成伤害</h3>
+    <p>相比上一个修改,这个修改也没什么挑战,就是每次移动以后选取附近的所有敌人,然后对他们造成伤害,再把伤害过的敌人放进一个单位组,在当次冲锋中不再对他们造成伤害.</p>
+    <p>分析上面的陈述,可以发现我们需要为冲锋的结构体增加一个额外的成员,一个单位组.</p>
+    <p>说到单位组,我又要向大家介绍库了:</p>
+    <div class="textbox">
+      <p>这个库是专门用来管理单位组的,它也是使用了单位组回收的机制,而不是创建-销毁,这个库叫<a href="http://www.wc3c.net/showthread.php?t=104464"
+          target="_new">GroupUtils</a>,作者是Rising_Dusk.</p>
+      <p>该库提供了如下函数:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//&nbsp;申请一个新的单位组<br/>^function&nbsp;^NewGroup&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^group^<br/>^//&nbsp;释放该单位组g<br/>^function&nbsp;^ReleaseGroup&nbsp;^takes&nbsp;^group&nbsp;^g&nbsp;^returns&nbsp;^boolean^<br/>^//&nbsp;刷新(清空)单位组g<br/>^function&nbsp;^GroupRefresh&nbsp;^takes&nbsp;^group&nbsp;^g&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;单位组whichGroup选取以(x,&nbsp;y)为圆心,radius为半径,满足条件filter的所有单位<br/>^function&nbsp;^GroupEnumUnitsInArea&nbsp;^takes&nbsp;^group&nbsp;^whichGroup^,&nbsp;^real&nbsp;^x^,&nbsp;^real&nbsp;^y^,&nbsp;^real&nbsp;^radius^,&nbsp;^boolexpr&nbsp;^filter&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;单位组whichGroup选取以(x,&nbsp;y)为圆心,radius为半径的所有单位<br/>^function&nbsp;^GroupUnitsInArea&nbsp;^takes&nbsp;^group&nbsp;^whichGroup^,&nbsp;^real&nbsp;^x^,&nbsp;^real&nbsp;^y^,&nbsp;^real&nbsp;^radius&nbsp;^returns&nbsp;^nothing");
+        </script>
+      </div>
+      <p>以及如下全局变量:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("// 如果是将单位组动作放在筛选条件里面执行,通常我们需要创建一个单位组,<br/>//然后再选取单位,接着就直接销毁掉了,这个单位组变量的意义就在于如果是使用<br/>//如上方法操作单位组,那么不必自己创建-销毁单位组,直接使用该变量即可.<br/>^group ^ENUM_GROUP<br/>^// 总是为真的布尔表达式类型<br/>^boolexpr ^BOOLEXPR_TRUE<br/>^// 总是为假的布尔表达式类型<br/>^boolexpr ^BOOLEXPR_FALSE");
+        </script>
+      </div>
+    </div>
+    <p>至于造成伤害的代码,请读者参阅本章的附件,就不在这里列出了.下面将要讲的是本小节的重点,关于Zinc里面结构体实例的本质.</p>
+    <h3>重复使用不会"抽筋"</h3>
+    <p>如果你尝试了一下目前的冲锋,会发现如果在正在冲锋的时候又按一次冲锋,会出现一些很有趣的动作.</p>
+    <p>原因很简单,因为前一个冲锋的<font class="hl">实例</font>还没有运行完,它会按照之前既定的路线去设置山丘之王的位置,同时,第二个冲锋<font class="hl">实例</font>
+      又是以完全不同的路线来执行的,所以两者之间发生了冲突.</p>
+    <p>那么,问题的原因都找到了,怎么修改呢,通过分析可以发现:一个单位在任何时候都只能进行一个冲锋动作,换句话说,单位和冲锋的<font class="hl">实例</font>应该是一一对应的关系.</p>
+    <p>所以,我们应该具备这样的能力,那便是在每一次一个单位开始冲锋的时候,查找有没有这个单位的冲锋的<font class="hl">实例</font>,听起来像是要把结构体的<font class="hl">实例</font>
+      和单位绑定起来.那么,朋友你是不是在期待我又介绍一个什么库来绑定数据到单位呢?好吧,从实际操作效果来说,是的,不过这个库不仅仅只有这些功能.</p>
+    <p>实际上,这个库并不复杂,它所做的事情仅仅是把魔兽争霸1.24版本的<font class="type">hashtable</font>用Vjass的形式呈现了出来.</p>
+    <p>其实,既然是使用<font class="type">hashtable</font>来将单位和<font class="hl">实例</font>关联起来,我们可以使用这个单位的句柄值(handle id)作为<font
+        class="type">hashtable</font>的主键,使用任意整数作为子键,然后存储的值便是转化为整数以后的<font class="hl">实例</font>.然后以后便可通过这个单位来查找到对应的冲锋了.
+    </p>
+    <p>刚才提到的那个提供Vjass语法的hashtable库,实际上就是用一个自动生成的唯一的整数作为主键,使用我们传递进去的键值作为子键.这样看来,这个库限制了<font class="type">hashtable</font>
+      的功能,原本是可以使用两个元素对应一个元素,现在只能一个元素对应一个元素了,但是在实际操作中,很少遇到需要二对一的情况.</p>
+    <div class="textbox">
+      <p>这个库叫<a href="http://www.ydwe.info/forum.php?mod=viewthread&amp;tid=6356"
+          target="_new">Table</a>(表),提供一种Vjass,Zinc语法的<font class="type">hashtable</font>使用方式,作者是Vexorian.</p>
+      <p>该库提供了如下三种结构类型:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("Table<br/>HandleTable<br/>StringTable");
+        </script>
+      </div>
+      <p>以及如下方法:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//&nbsp;返回的类型取决于调用这个方法的类型,可以是以上三种其一<br/>^static&nbsp;^method&nbsp;^create&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^Table^<br/>^//&nbsp;销毁<br/>^method&nbsp;^destroy&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;获得指定键所对应的值<br/>^method&nbsp;^operator^[]&nbsp;^takes&nbsp;^integer&nbsp;^key&nbsp;^returns&nbsp;^integer^<br/>^//&nbsp;设置指定键所对应的值<br/>^method&nbsp;^operator^[]=&nbsp;^takes&nbsp;^integer&nbsp;^key^,&nbsp;^integer&nbsp;^value&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;清空指定键所对应的值<br/>^method&nbsp;^flush&nbsp;^takes&nbsp;^integer&nbsp;^key&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;指定键是否有值<br/>^method&nbsp;^exists&nbsp;^takes&nbsp;^integer&nbsp;^key&nbsp;^returns&nbsp;^boolean");
+        </script>
+      </div>
+      <p>示例:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//&nbsp;实例化不同类型的Table<br/>^Table&nbsp;^tab&nbsp;^=&nbsp;^Table^.^create^();^<br/>^HandleTable&nbsp;^hTab&nbsp;^=&nbsp;^HandleTable^.^create^();^<br/>^//&nbsp;设置值,只能存储整数.<br/>//&nbsp;Table使用integer作为键;<br/>//&nbsp;HandleTable使用handle作为键;<br/>//&nbsp;StringTable则使用string作为键.<br/>^tab^[^775521^]&nbsp;^=&nbsp;^75321458^;^<br/>^hTabl^[^GetTriggerUnit^()]&nbsp;^=&nbsp;^45^;^<br/>^//&nbsp;获得指定键的值^<br/>^a&nbsp;^=&nbsp;^tab^[^147852^];^<br/>^b&nbsp;^=&nbsp;^hTab^[^GetTriggerUnit^()];^<br/>^//&nbsp;清空指定键的值^<br/>^tab^.^flush^(^12^);^<br/>^//&nbsp;指定键处是否有值<br/>^if&nbsp;^(^tab^.^exists^(^775521^))&nbsp;...<br/>^//&nbsp;销毁<br/>^tab^.^destroy^();^<br/>^hTab^.^destroy^();");
+        </script>
+      </div>
+    </div>
+    <p>读完注释以后有的朋友可能要发问了,只能使用一个键,还只能存储整数,这么"严重"地限制了<font class="type">hashtable</font>的功能,为什么还要用?</p>
+    <p>答案也很简单,如果设计得当,通常我们只需要一个键,并且只需要存储整数.对最后一点保持高度怀疑没关系,读完这章就差不多懂了.</p>
+    <p>那么在冲锋里面,我们便可以使用一个<font class="type">HandleTable</font>
+      来管理所有的冲锋实例,至于键,那自然是正在冲锋的单位了.既然是一个表管理所有的实例,那么我们可以使用一个静态的成员变量来作为这个表.关于静态成员变量,稍后做解释.</p>
+    <div class="textbox">
+      <p>既然是在实际动作执行之前就要进行检查,那么在ChargeData结构里面可以新增一个方法,专门用作实际效果之前的检查,如果已经有实例与该触发单位绑定,那么对该实例的数值进行重新设定,需要修改的有方向(x,
+        y轴上的位移dx, dy)和执行次数.</p>
+      <p>
+        所以,最后剩下的问题就是将实例与单位利用HandleTable绑定起来,刚才讲过这些XXXXTable只能存储整数,不过,上一章在讲TimerUtils的时候讲过实例和整数是可以互相转化的;那么,事情就变得简单了.我们声明一个静态的HandleTable,新增一个开始方法start,并且在launch方法里面被调用.
+      </p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//&nbsp;非静态的成员变量是通过[实例].[成员变量名]使用;<br/>//&nbsp;静态的成员变量便是通过[结构名].[成员变量名]来使用.<br/>^static&nbsp;^HandleTable&nbsp;^ht^;<br/><br/>^static&nbsp;^method&nbsp;^create^(^unit&nbsp;^u^,&nbsp;^real&nbsp;^tx^,&nbsp;^real&nbsp;^ty^)&nbsp;^->&nbsp;^ChargeData&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;在创建实例(实例化)以后,需要以单位为键,将实例保存起来<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht^[^u^]&nbsp;^=&nbsp;^integer^(^data^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...^<br/>^}^<br/><br/>^static&nbsp;^method&nbsp;^start^(^unit&nbsp;^u^,&nbsp;^real&nbsp;^tx^,&nbsp;^real&nbsp;^ty^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype&nbsp;^this^;&nbsp;^//&nbsp;前面讲过的thistype与this的用法<br/>&nbsp;&nbsp;&nbsp;&nbsp;^real&nbsp;^angle^;&nbsp;^//&nbsp;计算新的角度<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^thistype^.^ht^.^exists^(^u^))&nbsp;^{&nbsp;^//&nbsp;如果已经有数据<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this&nbsp;^=&nbsp;^thistype^(^ht^[^u^]);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;重设各种成员变量<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^count&nbsp;^=&nbsp;^25^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^angle&nbsp;^=&nbsp;^Atan2^(^ty&nbsp;^-&nbsp;^GetUnitY^(^u^),&nbsp;^tx&nbsp;^-&nbsp;^GetUnitX^(^u^));^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^dx&nbsp;^=&nbsp;^Cos^(^angle^)&nbsp;^*&nbsp;^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^this^.^dy&nbsp;^=&nbsp;^Sin^(^angle^)&nbsp;^*&nbsp;^36.0^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}&nbsp;^else&nbsp;^{&nbsp;^//&nbsp;如果没有数据,那么直接创建<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^create^(^u^,&nbsp;^x^,&nbsp;^y^);<br/>&nbsp;&nbsp;&nbsp;&nbsp;}<br/>}<br/><br/>^static&nbsp;^method&nbsp;^launch^()&nbsp;^->&nbsp;^boolean&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^GetSpellAbilityId^()&nbsp;^==&nbsp;^'A000'^)&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;这里,我们不再直接调用create,而是让start去管理这些判断<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^ChargeData^.^start^(^GetTriggerUnit^(),&nbsp;^GetSpellTargetX^(),&nbsp;^GetSpellTargetY^());^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^false^;^<br/>^}<br/><br/>^static&nbsp;^method&nbsp;^onInit^()&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht&nbsp;^=&nbsp;^HandleTable^.^create^();^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>^}");
+        </script>
+      </div>
+      <p>在<font class="uj">onInit</font>方法里面,我们不仅初始化事件触发器,同时初始化一个管理这个结构实例的HandleTable.</p>
+      <p>一旦事件触发(技能施放生效),start被调用,根据当前这个单位是否有正在运行的实例与之相关,重设实例数据或者新建实例.</p>
+      <p>在新建实例里面,要立即把新的实例与这个单位关联起来,不然上一步就无从判断了.</p>
+      <p>最后,在destroy方法里面,增加一个HandleTable清空数据的方法:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("method&nbsp;^destroy^()&nbsp;{<br/>&nbsp;&nbsp;&nbsp;&nbsp;^thistype^.^ht^.^flush^(^this^.^u^);^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^...<br/>^}");
+        </script>
+      </div>
+      <p>相信以上注释已经足够清楚了,不过,细心的朋友可能还是发现了一个小问题.</p>
+    </div>
+    <p>在讲这些小问题之前,将继续介绍结构体的一些语法.该语法不是很重要,但是如果不进行了解,可能会对以后的一些代码感到困惑.</p>
+    <div class="textbox">
+      <h4>操作符重载:</h4>
+      <p>可能有的朋友还没看清楚Table库介绍里面的<font class="keyword">operator</font>关键字,就碰到一屏幕的代码,把那个奇怪的写法给忘了.</p>
+      <p>在Table库的示例以及冲锋代码里面,出现了:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("b&nbsp;^=&nbsp;^hTab^[^GetTriggerUnit^()];<br/>^thistype^.^ht^[^u^]&nbsp;^=&nbsp;^integer^(^data^);");
+        </script>
+      </div>
+      <p>这样的用法.</p>
+      <p>大家知道<font class="hl">[&nbsp;]</font>是取得数组某一项的写法,方括号内应该写的是一个整数,它应该是一个索引,或者叫下标.无论什么,也不可能说放一个单位进去,这里用到的这种方式叫做<font
+          class="keyword">操作符重载</font>,这种说起来方便的写法其实对刚接触代码的人很不利,因为它根本就没有增加什么功能,只是改变写法而已.</p>
+      <p>操作符重载,顾名思义,让一些操作符(如+, -, *, &lt;, [...)在特定情况下具有新的功能,弃用原本的功能,比如<font class="hl">[&nbsp;]</font>
+        原本是获得指定下标的值,而现在是以括号内的元素为键,获得<font class="type">hashtable</font>里面的某个值.</p>
+      <p>所以,上面的Table库的介绍,如果这样写,可能会比较容易理解了:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("//&nbsp;返回的类型取决于调用这个方法的类型,可以是以上三种其一<br/>^static&nbsp;^method&nbsp;^create&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^Table^<br/>^//&nbsp;销毁<br/>^method&nbsp;^destroy&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;获得指定键所对应的值<br/>^method&nbsp;^loadInteger&nbsp;^takes&nbsp;^integer&nbsp;^key&nbsp;^returns&nbsp;^integer^<br/>^//&nbsp;设置指定键所对应的值<br/>^method&nbsp;^saveInteger&nbsp;^takes&nbsp;^integer&nbsp;^key^,&nbsp;^integer&nbsp;^value&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;清空指定键所对应的值<br/>^method&nbsp;^flush&nbsp;^takes&nbsp;^integer&nbsp;^key&nbsp;^returns&nbsp;^nothing^<br/>^//&nbsp;指定键是否有值<br/>^method&nbsp;^exists&nbsp;^takes&nbsp;^integer&nbsp;^key&nbsp;^returns&nbsp;^boolean");
+        </script>
+      </div>
+      <p>以及:</p>
+      <div class="code">
+        <script type="text/javascript">
+          highlight("...<br/>^//&nbsp;把参数放进圆括号里面是不是比放在方括号里面更加清楚呢<br/>^tab^.^saveInteger^(^775521^)&nbsp;^=&nbsp;^75321458^;<br/>^hTabl^.^saveInteger^(^GetTriggerUnit^())&nbsp;^=&nbsp;^45^;^<br/>^//&nbsp;同样的,获取数据<br/>^a&nbsp;^=&nbsp;^tab^.^loadInteger^(^147852^);^<br/>^b&nbsp;^=&nbsp;^hTab^.^loadInteger^(^GetTriggerUnit^());^<br/>^...");
+        </script>
+      </div>
+      <p>所以,所谓<font class="keyword">操作符重载</font>
+        ,实际上就是把一些常用方法换了一种写法而已.当然,如果Table结构里面没有进行操作符重载,我们就直接使用[&nbsp;],系统便将其默认为数组操作,如果前面的变量不是一个数组类型,或者是括号内的数不是整数,那么就要出现语法错误了.
+      </p>
+      <p>这些便是操作符重载的基本思想,实际作用不是很大,只是提供一些比较方便的编程写法,具体的写法可以参考Table库里面的写法,虽然是Vjass,但是相信读者可以融会贯通,用Zinc的语法写出.更详细的中文资料在<a
+          href="http://bbs.islga.org/read-htm-tid-36940.html" target="_new">老虎的Vjass教程</a>里面有讲到.</p>
+    </div>
+    <p>刚才讲到冲锋代码里面有一个小问题,其实不难发现:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("this^.^count&nbsp;^=&nbsp;^0^;^<br/>^angle&nbsp;^=&nbsp;^Atan2^(^ty&nbsp;^-&nbsp;^GetUnitY^(^u^),&nbsp;^tx&nbsp;^-&nbsp;^GetUnitX^(^u^));^<br/>^this^.^dx&nbsp;^=&nbsp;^Cos^(^angle^)&nbsp;^*&nbsp;^36.0^;^<br/>^this^.^dy&nbsp;^=&nbsp;^Sin^(^angle^)&nbsp;^*&nbsp;^36.0^;");
+      </script>
+    </div>
+    <p>这段代码在start和<font class="uj">create</font>
+      里面分别都出现,并且是一模一样的,在写代码的时候,我们通常要讲究不写重复的代码,这和之前拿一个常量来作为岩石碎裂效果的路径的思想是一样的,如果哪天这个count不是从25到0,而是从0到25了,我们就要分别在start和
+      <font class="uj">create</font>里面做修改,这样就增加了维护的难度.
+    </p>
+    <p>仔细思考,又可以发现,无论是实例化一个新的冲锋,还是覆盖掉上一个冲锋,上面那一小段代码是无论如何都要执行的,所以设置数据这段代码就没有写在<font class="uj">create</font>
+      ;里面的必要了,具体怎么写,请读者自己实践或者参考附件.</p>
+    <a name="nature_of_struct"></a>
+    <h3>结构体的真面目</h3>
+    <h4>结构体里面的静态和非静态</h4>
+    <p>前面一直讲什么静态如何使用,非静态如何使用,讲的再多,不给出一些真实的东西,仍然不是很容易理解.</p>
+    <p>写一个含有一个简单结构体的库:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("//!&nbsp;zinc<br/>^library&nbsp;^StructAnalysis&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^struct&nbsp;^demo&nbsp;^{^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^integer&nbsp;^si^;^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^i^;^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^static&nbsp;^method&nbsp;^start^()&nbsp;^{}^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^method&nbsp;^move^()&nbsp;^{}^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^}^<br/>^}<br/>^//!&nbsp;endzinc<br/>");
+      </script>
+    </div>
+    <p>以上的代码包含了一个最简单的结构体,有一个静态成员变量,整数<font class="hl">si</font>,一个非静态成员变量,整数<font class="hl">i</font>,一个静态方法<font
+        class="hl">start</font>,一个非静态方法<font class="hl">move</font>.</p>
+    <p>下面,打开mpq编辑器,导入该地图,然后提取里面的war3map.j文件,下面就是这个库的真面目:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("globals^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;StructAnalysis库的全局变量和常量<br/>&nbsp;&nbsp;&nbsp;&nbsp;^constant&nbsp;^boolean&nbsp;^LIBRARY_StructAnalysis^=^true<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;JASSHelper&nbsp;结构体全局变量和常量<br/>&nbsp;&nbsp;&nbsp;&nbsp;^constant&nbsp;^integer&nbsp;^si__StructAnalysis___demo^=^1^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^si__StructAnalysis___demo_F^=^0^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^si__StructAnalysis___demo_I^=^0^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^array&nbsp;^si__StructAnalysis___demo_V^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^s__StructAnalysis___demo_si^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^array&nbsp;^s__StructAnalysis___demo_i^<br/>^endglobals^<br/><br/>^//&nbsp;StructAnalysis库demo结构体的构造方法(allocate)<br/>^function&nbsp;^s__StructAnalysis___demo__allocate&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^integer^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^local&nbsp;^integer&nbsp;^this^=^si__StructAnalysis___demo_F^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^this^!=^0^)&nbsp;^then^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set&nbsp;^si__StructAnalysis___demo_F^=^si__StructAnalysis___demo_V^[^this^]^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^else^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set&nbsp;^si__StructAnalysis___demo_I^=^si__StructAnalysis___demo_I^+^1^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^set&nbsp;^this^=^si__StructAnalysis___demo_I^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endif^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^(^this^>^8190^)&nbsp;^then^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call&nbsp;^DisplayTimedTextToPlayer^(^GetLocalPlayer^(),^0^,^0^,^1000.^,^\"Unable&nbsp;to&nbsp;allocate&nbsp;id&nbsp;for&nbsp;an&nbsp;object&nbsp;of&nbsp;type:&nbsp;StructAnalysis___demo\"^)<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^0<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endif^<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^set&nbsp;^si__StructAnalysis___demo_V^[^this^]=-^1^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^return&nbsp;^this^<br/>^endfunction^<br/><br/>^//&nbsp;StructAnalysis库demo结构体的析构方法(deallocate)<br/>^function&nbsp;^s__StructAnalysis___demo_deallocate&nbsp;^takes&nbsp;^integer&nbsp;^this&nbsp;^returns&nbsp;^nothing^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^if&nbsp;^this^==^null&nbsp;^then^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call&nbsp;^DisplayTimedTextToPlayer^(^GetLocalPlayer^(),^0^,^0^,^1000.^,^\"Attempt&nbsp;to&nbsp;destroy&nbsp;a&nbsp;null&nbsp;struct&nbsp;of&nbsp;type:&nbsp;StructAnalysis___demo\"^)<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^elseif&nbsp;^(^si__StructAnalysis___demo_V^[^this^]!=-^1^)&nbsp;^then^<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^call&nbsp;^DisplayTimedTextToPlayer^(^GetLocalPlayer^(),^0^,^0^,^1000.^,^\"Double&nbsp;free&nbsp;of&nbsp;type:&nbsp;StructAnalysis___demo\"^)<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;^return^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^endif^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^set&nbsp;^si__StructAnalysis___demo_V^[^this^]=^si__StructAnalysis___demo_F^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^set&nbsp;^si__StructAnalysis___demo_F^=^this^<br/>^endfunction^<br/><br/>^//&nbsp;StructAnalysis库:<br/>^function&nbsp;^s__StructAnalysis___demo_start&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^nothing^<br/><br/>^endfunction^<br/><br/>^function&nbsp;^s__StructAnalysis___demo_move&nbsp;^takes&nbsp;^integer&nbsp;^this&nbsp;^returns&nbsp;^nothing^<br/><br/>^endfunction&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+      </script>
+    </div>
+    <p>粗略地一看,那些该死的<font class="keyword">public, private, static, method</font>全没了,所谓的方法其实只是函数而已.</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("function&nbsp;^s__StructAnalysis___demo_start&nbsp;^takes&nbsp;^nothing&nbsp;^returns&nbsp;^nothing^<br/><br/>^endfunction^<br/><br/>^function&nbsp;^s__StructAnalysis___demo_move&nbsp;^takes&nbsp;^integer&nbsp;^this&nbsp;^returns&nbsp;^nothing^<br/><br/>^endfunction&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+      </script>
+    </div>
+    <p>第一个函数原本是静态方法,在这里几乎是原封不动地拿过来了,只不过是函数名里面加上了库和结构体的前缀,还记得以前在<font class="cj">TimerStart</font>函数里面的<font
+        class="keyword">function</font>&nbsp;ChargeData.run和触发条件里面的<font class="keyword">function</font>
+      &nbsp;ChargeData.launch吗?它们的本质就是一个函数,当然可以那样写了.</p>
+    <p>那么,还记得在第一章里面对destroy方法的深入分析吗?在这里得到了印证,源代码里面的非静态的move方法是没有参数的,但是这里被自动加上了一个参数,叫<font class="special">this</font>
+      ,在第一章说的是<font class="special">this</font>的类型应该是结构体名称,但是这里竟然变成了<font class="type">integer</font>
+      ,联系所谓的实例和整数互相转化,读者是不是想到了什么呢?别急,我们先来看两个成员变量.请暂时忽略那两个很长的函数.</p>
+    <p>在Jass里面,所有的变量必须在war3map.j文件最开头,那么,我们所谓的成员变量也通通被化为原形,提到了文件开头:</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("globals^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;StructAnalysis库的全局变量和常量<br/>&nbsp;&nbsp;&nbsp;&nbsp;^constant&nbsp;^boolean&nbsp;^LIBRARY_StructAnalysis^=^true<br/><br/>&nbsp;&nbsp;&nbsp;&nbsp;^//&nbsp;JASSHelper&nbsp;结构体全局变量和常量<br/>&nbsp;&nbsp;&nbsp;&nbsp;^constant&nbsp;^integer&nbsp;^si__StructAnalysis___demo^=^1^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^si__StructAnalysis___demo_F^=^0^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^si__StructAnalysis___demo_I^=^0^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^array&nbsp;^si__StructAnalysis___demo_V^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^s__StructAnalysis___demo_si^<br/>&nbsp;&nbsp;&nbsp;&nbsp;^integer&nbsp;^array&nbsp;^s__StructAnalysis___demo_i^<br/>^endglobals");
+      </script>
+    </div>
+    <p>顺带提一下第一个常量,还记得<font class="keyword">static&nbsp;if</font>
+      的朋友肯定马上就想起来了,因为我们这里有StructAnalysis这个库,那么LIBRARY_StructAnalysis就为<font class="num">true</font>了.</p>
+    <p>接下来的4个常量或变量都是JassHelper自动生成的,是管理结构体用的,我们不用去操心.我们只用看最后的两个变量.</p>
+    <p>除去前面的库和结构体前缀,我们看到了<font class="hl">si</font>和<font class="hl">i</font>
+      ,前者是静态成员变量,后者是非静态的,但是,有趣的是,我们声明这两个变量的时候,没有说它们是数组,但是那个非静态的怎么就变成数组了呢?</p>
+    <p>带着这个疑问,我们来看<font class="uj">allocate</font>和<font class="uj">deallocate</font>这两个"方法",不用看得太明白,但是一点是可以看出来的,<font
+        class="uj">allocate</font>"方法"不带参数,返回整数.还记得结构体是怎么实例化的吗?</p>
+    <div class="code">
+      <script type="text/javascript">
+        highlight("ChargeData&nbsp;^data&nbsp;^=&nbsp;^ChargeData^.^allocate^();");
+      </script>
+    </div>
+    <p>感觉到世界一下子明亮了很多吗?没错,<font class="hl">根本就不存在什么实例和整数的相互转化,实例就是一个整数</font>.而每次调用<font class="uj">allocate</font>
+      "方法"都会获得一个唯一的整数.</p>
+    <p>那么,实例既然是一个整数,它调用非静态方法自然就是通过把自己作为参数传递过去,进行一些动作,比如下面那个<font class="uj">deallocate</font>"方法",它在使用<font
+        class="special">this</font>的时候是把<font class="special">this</font>作为数组索引来使用的.所以,这就是非静态成员变量<font class="keyword">
+        &nbsp;i&nbsp;</font>变成了数组的原因,拿当前实例作为数组索引,就能获得"当前实例的这个属性"的值.这也是为什么在非静态方法里面可以直接就使用<font class="special">this
+      </font>关键字来获取当前调用这个方法的实例,因为当前调用这个方法的实例以<font class="special">this</font>这个名字被传递过来了.</p>
+    <p>
+      所以,这里也解释了为什么静态的东西要用结构体类型去调用,而非静态的东西要用实例去调用.静态的成员变量和方法是共享于整个结构体的,无论是谁去使用,结果都是一样的,而非静态的成员变量和方法则是根据自身的这个整数值,要么作为参数传递进非静态方法,要么作为索引去读取一个非静态成员变量(数组).因此便达到了不同的实例的非静态成员变量以及方法做不同的事情的效果.
+    </p>
+    <p>以前有人说,想把技能实现多人化,多用用数组就可以了,实际上就是把与这个技能相关的所有变量都设置成数组,然后每次施放技能就生成一个唯一的整数,作为索引,来使用这些数组.反观结构体的实现原理,不正是通过<font
+        class="uj">allocate</font>
+      方法来生成一个唯一的实例,然后通过这个实例来做一系列的动作吗?所以说,千变万化,万变不离其宗,一切的障眼和变化的手法最终还是返璞归真为最初的实现理念.抓住这点,Vjass和Zinc就仅仅是另外一种写法的Jass了而已,而这样的写法,在被习惯以后,是要比纯Jass方便和易于管理的.
+    </p>
+    <p>其实这一小结所介绍的这种通过mpq解析器读取war3map.j的方法可以在一定程度上帮助读者理解一些Vjass,Zinc语法,比如操作符重载,只要写一段简单的代码,然后把war3map.j文件读取出来,一切的花样都会还原本质.
+    </p>
+    <p>
+      同时,这里同样暴露出了一个比较敏感的问题,就是地图尺寸,我们什么都没干,JassHelper就生成了那么一大堆东西,还有几个数组,但是,一如笔者在前面讲过的,Vjass和Zinc的优势不在速度也不在尺寸上面,最大的好处是方便于设计,这点很难体会,但是随着写代码的经验增加,相信读者会慢慢体会到这点.并且,在WC31.24这样的版本下面,与其想方设法缩减代码尺寸还不如少弄点花哨的模型来得实在.
+    </p>
+    <h2>总结</h2>
+    <p>
+      总的来说,这一章所涵盖的内容是比较多,一下子就接触了3个新的库,看起来效率很低,不过,我们常用的库也基本上快介绍完了,所以不用担心地图尺寸会增大很多的问题.这里帮助大家整理一下,在下面没有出现的但是在本章出现的知识点不是很重要,这里理出重点:
+    </p>
+    <h3>基础</h3>
+    <div class="textbox">
+      <ul>
+        <li>Zinc的基本语法特征(隐匿关键字,语句结尾加分号)</li>
+        <li>库(library)的声明以及全局变量和全局常量的用法</li>
+        <li>私有(private)和公有(public)</li>
+        <li>逻辑运算</li>
+        <li>循环</li>
+        <li>赋值运算符(+=, -=, *=, /=)</li>
+        <li>thistype和this关键字</li>
+        <li>使用常量(一次声明,多次引用)</li>
+        <li>熟悉GroupUtils和Table库</li>
+      </ul>
+    </div>
+    <h3>进阶</h3>
+    <div class="textbox">
+      <ul>
+        <li>static if</li>
+        <li>熟练使用循环</li>
+        <li>debug模式</li>
+        <li>不写重复代码</li>
+        <li>结构体的本质</li>
+      </ul>
+    </div>
+    <h3>附件</h3>
+    <div class="textbox">
+      <ul>
+        <li><a href="./libraries/GroupUtils.txt">GroupUtils下载</a></li>
+        <li><a href="./libraries/Table.txt">Table下载</a></li>
+        <li><a href="./libraries/TerrainPathability.txt">TerrainPathability下载</a></li>
+        <li><a href="./files/zinc_chpt2.w3x">本章地图</a></li>
+      </ul>
+    </div>
+    <div class="textbox"><a href="./ZHCNchapter1.html">&lt;&lt;第一章:万恶的冲锋</a>&nbsp;|&nbsp;<a
+        href="./ZHCNchapter3.html">第三章:伤害事件&gt;&gt;</a></div>
+    <script type="text/javascript">
+      writeFooter();
+    </script>
+  </div>
+</body>
+
+</html>
